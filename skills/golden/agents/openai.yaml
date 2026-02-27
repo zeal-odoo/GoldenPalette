@@ -1,0 +1,4 @@
+interface:
+  display_name: "Golden Swift Builder"
+  short_description: "Build a Swift app for color-mix tracking."
+  default_prompt: "Use this skill to design and implement a modern Swift/SwiftUI app that records color-mixing process steps, persists color data, and validates with tests."
