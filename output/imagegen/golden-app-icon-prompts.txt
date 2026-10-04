@@ -1,0 +1,22 @@
+Golden 调色 App Icon
+
+Generation mode: built-in image_gen tool.
+The tool did not expose a model-version selector; image2.5 could not be verified.
+
+Generation prompt:
+Use case: logo-brand
+Asset type: production macOS application icon for “Golden 调色”, a paint-mixing application using physical acrylic paint drops to produce a base color, its shadow, and its highlight.
+Primary request: design one exquisite, distinctive, immediately readable app icon, delivered as a single square 1024 x 1024 PNG.
+Scene/backdrop: a warm ivory porcelain rounded-square macOS icon tile, approximately 84 percent of the canvas width, centered with equal margins, a delicate bevel and very subtle soft shadow. The exterior beyond the tile must be genuinely transparent alpha, not a white or checkerboard background.
+Subject: a bold sculptural swirl formed by exactly three broad, thick acrylic-paint strokes flowing together clockwise around a small open center. Their flowing circular silhouette should subtly suggest a painterly letter G without typeset lettering. One stroke is rich cinnabar red (base), one is deep burgundy (shadow), and one is pale peach coral (highlight). Each should remain a distinct broad shape, like creamy paint smoothed by a palette knife, with just a few purposeful fine ridges. Add a small restrained warm golden glint where the paint curves meet, suggesting the app name and intelligent color mixing.
+Style/medium: sophisticated Apple desktop app icon, tactile studio-crafted pigment relief, modern and minimal, elegant soft lighting from top left, realistic satin paint material, crisp contours, strong negative space. Warm ivory, cinnabar #C41E3A, deep burgundy, pale coral and restrained antique gold #D4AF37.
+Composition/framing: straight-on centered orthographic view, one cohesive large symbol, legible at 32 px, generous internal breathing room, a single icon only.
+Constraints: no words, no captions, no numerals, no watermarks, no existing commercial logos, no brush handles, no paint cans, no tiny colored dots, no generic rainbow palette, no multiple-icon presentation, no desktop or phone mockup, no white matte outside the rounded-square tile. The three colored strokes must dominate the design.
+
+Final refinement prompt:
+Use case: precise-object-edit
+Asset type: final macOS app icon PNG with transparent exterior.
+Edit target: the supplied Golden 调色 icon.
+Change only the outer cutout boundary and the transparent canvas. Remove every irregular white fringe, paint-looking fleck, halo, stray pixel, and speck outside the ivory rounded-square tile. The tile must have a perfectly smooth, clean, antialiased continuous rounded-square silhouette, with even transparent margins. At the very top there are conspicuous ragged white scraps: remove them completely.
+Preserve the icon design inside the tile exactly: the three cinnabar red, burgundy shadow, and pale peach highlight paint swirls, the tiny gold connection, their shape, size, color, fine paint texture, lighting, and positions, and the ivory porcelain background. Do not add or subtract parts of the central symbol.
+The entire exterior must be true transparent alpha, not white, black, grey, or a checkerboard baked into pixels. There must be absolutely no isolated opaque pixels beyond the smooth tile. Keep the square canvas and centered composition. Single icon only; no text, no new elements.

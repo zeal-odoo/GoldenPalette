@@ -7,6 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9F44FA333072702F0029812C /* RecipeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA323072702F0029812C /* RecipeLibrary.swift */; };
+		9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA34307280A70029812C /* MixingRecipe.swift */; };
+		9F44FA37307280EF0029812C /* CodexMixingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA36307280EF0029812C /* CodexMixingService.swift */; };
+		9F44FA39307281960029812C /* AIMixingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA38307281960029812C /* AIMixingView.swift */; };
+		9F44FA3B307282610029812C /* MixingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA3A307282610029812C /* MixingTests.swift */; };
+		9F44FA3D307289D80029812C /* MixingPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA3C307289D80029812C /* MixingPalette.swift */; };
+		9F44FA3F30728EA80029812C /* AIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA3E30728EA80029812C /* AIConfiguration.swift */; };
+		9F44FA4130728ED20029812C /* AISettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA4030728ED20029812C /* AISettingsView.swift */; };
+		9F44FA433072C2080029812C /* ColorBlend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA423072C2080029812C /* ColorBlend.swift */; };
+		9F44FA453072C28C0029812C /* ColorBlendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA443072C28C0029812C /* ColorBlendView.swift */; };
+		9F44FA473072D5D50029812C /* SavedMixingRecipeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA463072D5D50029812C /* SavedMixingRecipeWindow.swift */; };
 		9F76CAD42D54A62C00DD29D9 /* Golden__App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F76CAD32D54A62C00DD29D9 /* Golden__App.swift */; };
 		9F76CAD62D54A62C00DD29D9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F76CAD52D54A62C00DD29D9 /* ContentView.swift */; };
 		9F76CAD82D54A62E00DD29D9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9F76CAD72D54A62E00DD29D9 /* Assets.xcassets */; };
@@ -34,6 +45,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9F44FA323072702F0029812C /* RecipeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeLibrary.swift; sourceTree = "<group>"; };
+		9F44FA34307280A70029812C /* MixingRecipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingRecipe.swift; sourceTree = "<group>"; };
+		9F44FA36307280EF0029812C /* CodexMixingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexMixingService.swift; sourceTree = "<group>"; };
+		9F44FA38307281960029812C /* AIMixingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIMixingView.swift; sourceTree = "<group>"; };
+		9F44FA3A307282610029812C /* MixingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingTests.swift; sourceTree = "<group>"; };
+		9F44FA3C307289D80029812C /* MixingPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingPalette.swift; sourceTree = "<group>"; };
+		9F44FA3E30728EA80029812C /* AIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIConfiguration.swift; sourceTree = "<group>"; };
+		9F44FA4030728ED20029812C /* AISettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISettingsView.swift; sourceTree = "<group>"; };
+		9F44FA423072C2080029812C /* ColorBlend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorBlend.swift; sourceTree = "<group>"; };
+		9F44FA443072C28C0029812C /* ColorBlendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorBlendView.swift; sourceTree = "<group>"; };
+		9F44FA463072D5D50029812C /* SavedMixingRecipeWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedMixingRecipeWindow.swift; sourceTree = "<group>"; };
 		9F76CAD02D54A62C00DD29D9 /* Golden调色.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Golden调色.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F76CAD32D54A62C00DD29D9 /* Golden__App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Golden__App.swift; sourceTree = "<group>"; };
 		9F76CAD52D54A62C00DD29D9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -100,6 +122,16 @@
 				9F76CAD72D54A62E00DD29D9 /* Assets.xcassets */,
 				9F76CADC2D54A62E00DD29D9 /* Golden__.entitlements */,
 				9F76CAD92D54A62E00DD29D9 /* Preview Content */,
+				9F44FA323072702F0029812C /* RecipeLibrary.swift */,
+				9F44FA34307280A70029812C /* MixingRecipe.swift */,
+				9F44FA36307280EF0029812C /* CodexMixingService.swift */,
+				9F44FA38307281960029812C /* AIMixingView.swift */,
+				9F44FA3C307289D80029812C /* MixingPalette.swift */,
+				9F44FA3E30728EA80029812C /* AIConfiguration.swift */,
+				9F44FA4030728ED20029812C /* AISettingsView.swift */,
+				9F44FA423072C2080029812C /* ColorBlend.swift */,
+				9F44FA443072C28C0029812C /* ColorBlendView.swift */,
+				9F44FA463072D5D50029812C /* SavedMixingRecipeWindow.swift */,
 			);
 			path = "Golden调色";
 			sourceTree = "<group>";
@@ -116,6 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				9F76CAE52D54A62E00DD29D9 /* Golden__Tests.swift */,
+				9F44FA3A307282610029812C /* MixingTests.swift */,
 			);
 			path = "Golden调色Tests";
 			sourceTree = "<group>";
@@ -193,7 +226,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1420;
-				LastUpgradeCheck = 1420;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					9F76CACF2D54A62C00DD29D9 = {
 						CreatedOnToolsVersion = 14.2;
@@ -260,7 +293,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F76CAD62D54A62C00DD29D9 /* ContentView.swift in Sources */,
+				9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */,
+				9F44FA3F30728EA80029812C /* AIConfiguration.swift in Sources */,
+				9F44FA473072D5D50029812C /* SavedMixingRecipeWindow.swift in Sources */,
+				9F44FA39307281960029812C /* AIMixingView.swift in Sources */,
+				9F44FA453072C28C0029812C /* ColorBlendView.swift in Sources */,
+				9F44FA4130728ED20029812C /* AISettingsView.swift in Sources */,
+				9F44FA3D307289D80029812C /* MixingPalette.swift in Sources */,
+				9F44FA333072702F0029812C /* RecipeLibrary.swift in Sources */,
+				9F44FA37307280EF0029812C /* CodexMixingService.swift in Sources */,
 				9F76CAD42D54A62C00DD29D9 /* Golden__App.swift in Sources */,
+				9F44FA433072C2080029812C /* ColorBlend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,6 +312,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F76CAE62D54A62E00DD29D9 /* Golden__Tests.swift in Sources */,
+				9F44FA3B307282610029812C /* MixingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,9 +374,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 62KCY235LR;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -352,6 +399,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -390,9 +438,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 62KCY235LR;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -405,6 +456,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -418,18 +470,20 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -445,18 +499,20 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -467,13 +523,12 @@
 		9F76CAF92D54A62E00DD29D9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.7;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--Tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -486,13 +541,12 @@
 		9F76CAFA2D54A62E00DD29D9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.7;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--Tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -505,11 +559,11 @@
 		9F76CAFC2D54A62E00DD29D9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -522,11 +576,11 @@
 		9F76CAFD2D54A62E00DD29D9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 62KCY235LR;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
