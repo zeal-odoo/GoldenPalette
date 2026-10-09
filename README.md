@@ -47,9 +47,9 @@ AI 会收到每组的品牌、漆系、色号、预览 RGB 和占比，再合成
 | 郡士 | 水性 Hobby Color H | 38 |
 | 郡士 | Acrysion N | 40 |
 
-除 TS 系列外，田宫与郡士目前收录常用实色，并非完整厂商目录；不包含金属漆、透明漆、稀释剂等。色号与名称参考[田宫官方色表](https://www.tamiya.com/cms/img/usr/inst/paints/202405_paints.pdf)及[郡士官方目录](https://www.mr-hobby.com/en/record-download/catalog/23)。屏幕色块为近似示意色，并非官方实测 RGB；AI 会结合品牌、色号、名称和预览生成 GOLDEN 试调配方，200 滴仅计算颜料，不含水或媒介。
+除 TS 系列外，田宫与郡士目前收录常用实色，并非完整厂商目录；不包含金属漆、透明漆、稀释剂等。色号与名称参考[田宫官方色表](https://www.tamiya.com/cms/img/usr/inst/paints/202405_paints.pdf)及[郡士官方目录](https://www.mr-hobby.com/en/record-download/catalog/23)。屏幕色块使用下述可追溯的 sRGB 数据，并非官方实测 RGB；AI 会结合品牌、色号、名称和预览生成 GOLDEN 试调配方，200 滴仅计算颜料，不含水或媒介。
 
-在“品牌标准色 → 田宫 Tamiya → 喷罐漆 · TS”中可选择 TS 参考色，例如 TS-32、TS-50、TS-102，支持按色号及中英文名称搜索。色号和英文名称按 [田宫官方 TS 目录](https://www.tamiya.com/english/products/list.html?genre_item=e_504030)核对（2026-10-09），收录 TS-1～TS-102 中的 98 个有色款；TS-13、TS-65、TS-79、TS-80 为无色罩光款，不作为独立目标色收录。TS 的 RGB 是应用中的近似预览值，并非厂商发布的 RGB。金属、珠光、荧光和有色透明款仅作为近似颜色参考，不复现这些特殊效果；界面、AI 提示和保存的配方说明中均标明此限制。TS 不会加入原料套装，实际用漆仍是所选的 SoFlat 12 色或 Fluid 13 色。
+在“品牌标准色 → 田宫 Tamiya → 喷罐漆 · TS”中可选择 TS 参考色，例如 TS-32、TS-50、TS-102，支持按色号及中英文名称搜索。色号和英文名称按 [田宫官方 TS 目录](https://www.tamiya.com/english/products/list.html?genre_item=e_504030)核对（2026-10-09），收录 TS-1～TS-102 中的 98 个有色款；TS-13、TS-65、TS-79、TS-80 为无色罩光款，不作为独立目标色收录。1.0.12 起，TS 的 sRGB 从田宫官方 PDF 对应色号的色块转换取得，并非厂商公布的实测 RGB。金属、珠光、荧光和有色透明款仅作为近似颜色参考，不复现这些特殊效果；界面、AI 提示和保存的配方说明中均标明此限制。TS 不会加入原料套装，实际用漆仍是所选的 SoFlat 12 色或 Fluid 13 色。
 
 Fluid 原料包括 [0928 官方 10 色调色套装](https://goldenartistcolors.com/products/fluid-acrylics-mixing-set)的 2009、2008、2210、2305、2260、2255、2270、2275、2040、2380，以及吡咯橙 2276、二噁嗪紫 2150、黄赭石 2407；色号与名称依据 [GOLDEN Fluid 官方色表](https://goldenartistcolors.com/products/golden-artist-acrylics/fluid/pigment-data)。SoFlat 与 Fluid 的同名色按系列和色号分别记录，不能直接等量替换；请使用等体积滴量，成色、光泽和遮盖力需通过干燥小样确认。
 
@@ -79,9 +79,47 @@ Fluid 原料包括 [0928 官方 10 色调色套装](https://goldenartistcolors.c
 
 二噁嗪紫等深色在原色预览中可能接近黑色，以上数值照录官网数据。屏幕参考值相同不保证实物颜料成色相同；仍需少量试调，并以干燥小样对色。
 
-官方调色器目前没有 SoFlat 专用色库，核对的 [SoFlat 官方产品数据](https://goldenartistcolors.com/products/golden-artist-acrylics/soflat/pigment-data)中也没有这 12 色的有效专用 RGB 字段。因此 SoFlat 保留原有近似色并明确标注，不套用其他系列同名颜料的数值。两套原料仍分别选择。
+官方调色器没有 SoFlat 专用色库，SoFlat 产品数据中的专用 RGB 字段仍为空。1.0.12 起改用 SoFlat 自身官网色样的 sRGB 取样值，具体方法见下文；不套用 Fluid 等其他系列同名颜料的数值。两套原料仍分别选择。
 
 1.0.9 起，保存品牌参考色时同时保存其 RGB 快照，避免日后色库更新使旧配方失效。1.0.7–1.0.8 的 Fluid 参考色按旧预览值恢复，本色、阴影色、高光色的已存目标和用量保持原样；重新选择品牌标准色生成新配方时使用当前色库。
+
+## 1.0.12 色卡 sRGB 更新
+
+本次更新 354 个参考色：田宫、郡士共 342 个品牌色，以及指定的 SoFlat 12 色。已有 Fluid 13 色仍使用官方调色器数据。所有色块、RGB/HEX 显示和 AI 原料输入使用同一组 sRGB；原料行的悬停说明与品牌参考色说明标明实际来源。
+
+| 数据范围 | 数量 | 来源与处理 |
+| --- | --- | --- |
+| 田宫珐琅 X / XF，可按色号明确匹配项 | 35 | [Encycolorpedia](https://encycolorpedia.jp/paints/tamiya) 的 HEX，按 800xx / 803xx 珐琅产品编号匹配 |
+| 田宫丙烯 X / XF、LP、TS，以及未匹配的珐琅色 | 179 | [田宫官方 2024 色卡](https://www.tamiya.com/cms/img/usr/inst/paints/202405_paints.pdf)，对应色号的色块转换为 sRGB |
+| 郡士 Mr.Color C / 水性 H / Acrysion N | 128 | [郡士官方 2024–2025 色卡](https://www.mr-hobby.com/en/record-download/catalog/23)，三个漆系分别取值 |
+| GOLDEN SoFlat | 12 | 各 6xxx 产品页面的官方笔涂色样，使用内嵌的 sRGB IEC61966-2.1 色彩配置 |
+
+Encycolorpedia 当前未收录郡士和 SoFlat。其田宫条目的 800xx / 803xx 为珐琅产品编号，因此不直接覆盖丙烯、LP 或 TS。未能明确匹配的珐琅色为 X-2、X-7、X-18、XF-1、XF-2、XF-3、XF-63，使用田宫官方色卡；同一 X / XF 色号在应用中仍保留独立漆系身份与来源。
+
+PDF 色卡用启用 ICC 色彩管理的 MuPDF 1.28.2 转成 sRGB，再对对应色块内不含文字的 6×6 pt 区域以 4 倍分辨率取各通道中位数。PDF 中的 C/H/N 对照编号只作文字参考，不拿来跨漆系复用 RGB。印刷色卡转换值与网站数字色值仍是屏幕参考，不代表干燥颜料的实测结果，也不保证可复现金属、珠光、荧光或透明效果。
+
+SoFlat 使用产品页的 `swatches-web-1000px` 原始 WebP，确认产品编号和内嵌 ICC 配置后，以相对比色意图转换到 sRGB。取样区为原图坐标 `[360, 470, 410, 510]`：第一、第二条黑色遮盖力测试条之间的白底上色区域。每个通道取 50×40 像素的中位数，避开黑条、边缘和白色空白，不将混有黑条的几何中心当作颜料色。以下为图像取样值，不是 GOLDEN 公布的实测 RGB。
+
+| SoFlat 色号 | 颜色 | sRGB | HEX |
+| --- | --- | --- | --- |
+| 6755 | Titanium White | 244, 248, 249 | #F4F8F9 |
+| 6745 | Black | 31, 36, 31 | #1F241F |
+| 6660 | Permanent Green | 1, 114, 64 | #017240 |
+| 6610 | Ultramarine Blue | 1, 38, 214 | #0126D6 |
+| 6505 | Cadmium Primrose | 255, 241, 22 | #FFF116 |
+| 6550 | Naphthol Red Light | 240, 43, 18 | #F02B12 |
+| 6645 | Cobalt Teal | 2, 167, 168 | #02A7A8 |
+| 6510 | Bismuth Vanadate Yellow | 255, 235, 2 | #FFEB02 |
+| 6570 | Naphthol Pink | 239, 65, 80 | #EF4150 |
+| 6530 | Cadmium Orange | 254, 102, 13 | #FE660D |
+| 6595 | Red Violet | 111, 53, 104 | #6F3568 |
+| 6675 | Yellow Green | 174, 232, 52 | #AEE834 |
+
+逐色来源 URL、原文件 SHA-256、PDF 页码、取样坐标、ICC 名称以及更新前后的值保存在 [来源记录](docs/paint-swatch-sources.json)。应用离线使用这些已核对的值，不在运行时下载色卡。
+
+旧配方有 RGB 快照时保留原快照；1.0.7–1.0.8 等未保存快照的品牌参考按更新前的 RGB 恢复，本色、阴影、高光和多色合成中的目标与原料用量不重算。重新选择标准色生成配方时才使用新值。
+
+界面人工核对位置：在 AI 调色中分别选择田宫珐琅 XF-53（#6D787C）、田宫丙烯 XF-53（#71848E）、郡士 C13（#74858D），检查预览 RGB/HEX 与来源说明；切换 SoFlat 原料后悬停查看各行 sRGB，并打开旧配方确认其原预览与用量保留。
 
 ## 开发
 

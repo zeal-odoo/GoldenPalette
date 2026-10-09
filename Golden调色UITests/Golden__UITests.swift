@@ -307,6 +307,7 @@ final class Golden__UITests: XCTestCase {
         app.radioButtons["品牌标准色"].click()
         chooseMenuOption("Lacquer 溶剂型漆 · LP", picker: "referencePaintSeriesPicker", in: app)
         selectReference("LP-34", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 209, 206, 193") == true)
         let generate = app.buttons["generateMixingButton"]
         revealBlendInput(generate, in: app)
         generate.click()
@@ -361,7 +362,7 @@ final class Golden__UITests: XCTestCase {
         app.radioButtons["品牌标准色"].click()
         chooseMenuOption("喷罐漆 · TS", picker: "referencePaintSeriesPicker", in: app)
         selectReference("TS-32", in: app)
-        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 137, 147, 145") == true)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 106, 144, 154") == true)
         let generate = app.buttons["generateMixingButton"]
         revealBlendInput(generate, in: app)
         generate.click()
@@ -410,6 +411,7 @@ final class Golden__UITests: XCTestCase {
         app.radioButtons["品牌标准色"].click()
         chooseMenuOption("郡士 Mr.Hobby", picker: "referencePaintBrandPicker", in: app)
         selectReference("C13", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 116, 133, 141") == true)
         let generate = app.buttons["generateMixingButton"]
         revealBlendInput(generate, in: app)
         generate.click()
@@ -468,6 +470,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue((summary.value as? String)?.contains("12 色") == true)
         let soFlatNote = app.staticTexts["paintPreviewNote-goldenSoFlat"]
         XCTAssertTrue((soFlatNote.value as? String)?.contains("近似屏幕参考") == true)
+        XCTAssertTrue((soFlatNote.value as? String)?.contains("官方色样") == true)
         chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
         let fluidNote = app.staticTexts["paintPreviewNote-goldenFluid"]
         XCTAssertTrue(fluidNote.waitForExistence(timeout: 5))
@@ -719,7 +722,8 @@ final class Golden__UITests: XCTestCase {
                 "recipe": recipe("UI 阴影色", white: 100)
             ],
             "highlight": [
-                "target": ["red": 220, "green": 235, "blue": 220],
+                // Preserve the required contrast for brighter, sourced reference grays.
+                "target": ["red": 255, "green": 255, "blue": 255],
                 "recipe": recipe("UI 高光色", white: 200)
             ]
         ]

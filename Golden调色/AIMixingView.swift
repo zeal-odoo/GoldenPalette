@@ -635,7 +635,7 @@ private struct PaintDoseRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(paint.ingredientName)，色号 \(paint.code)，\(drops.map { "\($0) 滴" } ?? "可用调色原料")")
-        .help("\(paint.rgbDescription)\n\(paint.series.previewNote)")
+        .help("\(paint.rgbDescription)\n\(paint.previewNote)")
     }
 }
 

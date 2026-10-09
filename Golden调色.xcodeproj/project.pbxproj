@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9F3B8E0E3078BDF7001FD75B /* PaintSwatchData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */; };
 		9F44FA333072702F0029812C /* RecipeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA323072702F0029812C /* RecipeLibrary.swift */; };
 		9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA34307280A70029812C /* MixingRecipe.swift */; };
 		9F44FA37307280EF0029812C /* CodexMixingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA36307280EF0029812C /* CodexMixingService.swift */; };
@@ -49,6 +50,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintSwatchData.swift; sourceTree = "<group>"; };
 		9F44FA323072702F0029812C /* RecipeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeLibrary.swift; sourceTree = "<group>"; };
 		9F44FA34307280A70029812C /* MixingRecipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingRecipe.swift; sourceTree = "<group>"; };
 		9F44FA36307280EF0029812C /* CodexMixingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexMixingService.swift; sourceTree = "<group>"; };
@@ -143,6 +145,7 @@
 				9F8F7CEB3077D20F000C73AF /* PaintSeriesPicker.swift */,
 				9F8F7CED3077D371000C73AF /* PaintCatalog.swift */,
 				9F8F7CF13077E3D1000C73AF /* PaintReference.swift */,
+				9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */,
 			);
 			path = "Golden调色";
 			sourceTree = "<group>";
@@ -304,6 +307,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F3B8E0E3078BDF7001FD75B /* PaintSwatchData.swift in Sources */,
 				9F76CAD62D54A62C00DD29D9 /* ContentView.swift in Sources */,
 				9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */,
 				9F8F7CEE3077D371000C73AF /* PaintCatalog.swift in Sources */,
@@ -486,7 +490,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -499,7 +503,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.11;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -515,7 +519,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -528,7 +532,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.11;
+				MARKETING_VERSION = 1.0.12;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

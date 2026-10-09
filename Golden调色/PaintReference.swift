@@ -24,7 +24,7 @@ struct PaintReference: Codable, Equatable, Sendable {
         if previewTargetSnapshot != Self.catalogPreview(series: series, paintCode: paintCode) {
             return "参考 RGB 保留保存时的预览值，当前色库已更新。实际成色请以干燥小样为准。"
         }
-        return series.previewNote
+        return paint?.previewNote ?? series.previewNote
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -36,7 +36,7 @@ struct PaintReference: Codable, Equatable, Sendable {
         series = try values.decode(PaintSeries.self, forKey: .series)
         paintCode = try values.decode(String.self, forKey: .paintCode)
         previewTargetSnapshot = try values.decodeIfPresent(MixingTarget.self, forKey: .previewTargetSnapshot)
-            ?? (series == .goldenFluid ? Self.legacyFluidPreviews[paintCode] : nil)
+            ?? Self.legacyPreview(series: series, paintCode: paintCode)
             ?? Self.catalogPreview(series: series, paintCode: paintCode)
         try validate()
     }
@@ -75,6 +75,17 @@ struct PaintReference: Codable, Equatable, Sendable {
         series.paints.first { $0.code == paintCode }.map {
             MixingTarget(red: $0.red, green: $0.green, blue: $0.blue)
         }
+    }
+
+    // References without a snapshot predate the sourced color update. Restore the
+    // original reference for every tone, rather than substituting the new catalog RGB.
+    private static func legacyPreview(series: PaintSeries, paintCode: String) -> MixingTarget? {
+        if series == .goldenFluid { return legacyFluidPreviews[paintCode] }
+        guard let paint = series.paints.first(where: { $0.code == paintCode }),
+              let rgb = Int(paint.legacyHex, radix: 16) else { return nil }
+        return MixingTarget(
+            red: Double((rgb >> 16) & 0xFF), green: Double((rgb >> 8) & 0xFF), blue: Double(rgb & 0xFF)
+        )
     }
 
     // v1.0.7–1.0.8 stored only series/code. All three tones must restore the same

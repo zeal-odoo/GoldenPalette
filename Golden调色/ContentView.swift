@@ -12,8 +12,11 @@ struct GoldenPaint: Identifiable {
     let name: String
     let code: String
     let series: String
-    let hex: String
+    // Keep the pre-1.0.12 preview for recipes saved without an RGB snapshot.
+    let legacyHex: String
     let isDiscontinued: Bool
+
+    var hex: String { PaintSwatchData.swatch(series: .goldenSoFlat, code: code)?.hex ?? legacyHex }
 
     var id: String { code }
 
@@ -41,12 +44,12 @@ struct GoldenPaint: Identifiable {
             name: parts[0],
             code: parts[1],
             series: parts[2],
-            hex: parts[3],
+            legacyHex: parts[3],
             isDiscontinued: parts[4] == "true"
         )
     }
 
-    // Approximate screen swatches matched to the supplied SoFlat set photo.
+    // Original screen previews retained for legacy decoding; current sRGB is in PaintSwatchData.
     private static let rawLibrary = """
 Titanium White|6755|SoFlat|F3F5F2|false
 Black|6745|SoFlat|222721|false

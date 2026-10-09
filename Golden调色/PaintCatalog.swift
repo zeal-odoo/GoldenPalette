@@ -90,13 +90,19 @@ enum PaintSeries: String, Codable, CaseIterable, Identifiable, Sendable {
         case .goldenFluid:
             return "色块采用 GOLDEN 官方调色器的 sRGB，仅作屏幕参考，实际成色请以干燥小样为准。"
         case .goldenSoFlat:
-            return "官方调色器未提供 SoFlat 专用 RGB，色块仍为近似屏幕参考。"
+            return PaintSwatchSource.goldenSoFlatSwatch.note
+        case .tamiyaEnamel:
+            return "按具体色号使用 Encycolorpedia 的 sRGB；未匹配项取自田宫官方色卡。均为屏幕参考，非官方实测 RGB。"
+        case .tamiyaAcrylic, .tamiyaLacquer:
+            return PaintSwatchSource.tamiyaChart.note
         case .tamiyaSpray:
-            return "TS 色块为近似屏幕参考，非官方实测 RGB。特殊效果色仅匹配近似颜色，不复现金属、珠光、荧光或透明效果。"
-        default:
-            return "色块为近似屏幕参考，非官方实测 RGB。"
+            return PaintSwatchSource.tamiyaChart.note + Self.sprayEffectNote
+        case .mrColor, .aqueous, .acrysion:
+            return PaintSwatchSource.mrHobbyChart.note
         }
     }
+
+    static let sprayEffectNote = "特殊效果色仅匹配近似颜色，不复现金属、珠光、荧光或透明效果。"
 
     func matchingPaints(_ search: String) -> [CatalogPaint] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -119,7 +125,14 @@ struct CatalogPaint: Identifiable, Equatable, Sendable {
     let code: String
     let name: String
     let chineseName: String
-    let hex: String
+    // Original preview before the sourced sRGB update, used only for legacy decoding.
+    let legacyHex: String
+
+    var hex: String { PaintSwatchData.swatch(series: series, code: code)?.hex ?? legacyHex }
+    var previewNote: String {
+        guard let swatch = PaintSwatchData.swatch(series: series, code: code) else { return series.previewNote }
+        return series == .tamiyaSpray ? swatch.source.note + PaintSeries.sprayEffectNote : swatch.source.note
+    }
 
     var id: String { "\(series.rawValue):\(code)" }
     var mixingName: String { "\(chineseName) · \(name)" }
@@ -186,7 +199,7 @@ enum PaintCatalog {
 
     private static let catalogs: [PaintSeries: [CatalogPaint]] = [
         .goldenSoFlat: GoldenPaint.all.map {
-            CatalogPaint(series: .goldenSoFlat, code: $0.code, name: $0.name, chineseName: $0.chineseName, hex: $0.hex)
+            CatalogPaint(series: .goldenSoFlat, code: $0.code, name: $0.name, chineseName: $0.chineseName, legacyHex: $0.legacyHex)
         },
         .goldenFluid: parse(goldenFluid, series: .goldenFluid),
         .tamiyaAcrylic: parse(tamiyaCommon, series: .tamiyaAcrylic),
@@ -202,7 +215,7 @@ enum PaintCatalog {
         table.split(separator: "\n").compactMap { line in
             let fields = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 4 else { return nil }
-            return CatalogPaint(series: series, code: fields[0], name: fields[2], chineseName: fields[1], hex: fields[3])
+            return CatalogPaint(series: series, code: fields[0], name: fields[2], chineseName: fields[1], legacyHex: fields[3])
         }
     }
 
@@ -229,11 +242,11 @@ enum PaintCatalog {
 2407|黄赭石|Yellow Ochre|B2792F
 """
 
-    // Codes and names: official Tamiya color chart (202 4) and Mr.Hobby chart (2024–2025).
+    // Codes and names: official Tamiya color chart (2024) and Mr.Hobby chart (2024–2025).
     // https://www.tamiya.com/cms/img/usr/inst/paints/202405_paints.pdf
     // https://www.mr-hobby.com/en/record-download/catalog/23
     // This is a curated solid-color mixing library, not the complete product catalogue.
-    // RGB swatches are approximate previews, not measured standards. AI also receives the reference code and name.
+    // Retain the old approximations for decoding saved references; PaintSwatchData supplies current sRGB.
     private static let tamiyaCommon = """
 X-1|黑色|Black|202020
 X-2|白色|White|F5F5F0
@@ -316,7 +329,7 @@ LP-51|纯橙|Pure Orange|F67523
 
     // TS product codes and English names checked against Tamiya's catalog on 2026-10-09.
     // https://www.tamiya.com/english/products/list.html?genre_item=e_504030
-    // App-authored approximate screen RGB, not manufacturer-published or measured values.
+    // Legacy app-authored RGB; current official-chart sRGB is supplied by PaintSwatchData.
     // TS colors are targets only. Omit colorless clear coats 13, 65, 79, and 80;
     // colored effect paints remain selectable, with limitations in the UI and AI prompt.
     private static let tamiyaSpray = """

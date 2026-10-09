@@ -472,15 +472,30 @@ struct PaintCatalogTests {
     }
 
     @Test
-    func testSoFlatKeepsItsOwnApproximateSwatches() {
+    func testSoFlatSwatchesUseItsOwnOfficialSRGBImages() {
+        // Official 6xxx SoFlat brush-outs, ICC sRGB, white-backed 50x40 pixel median.
+        // Exclude the black opacity-test stripes visible through translucent paints.
         let expected = [
-            "6755": "F3F5F2", "6745": "222721", "6660": "007A48", "6610": "0736C8",
-            "6505": "F5EA32", "6550": "DA321E", "6645": "00AAA8", "6510": "F4DF16",
-            "6570": "D9485A", "6530": "F47719", "6595": "643761", "6675": "AAD62C"
+            "6755": "F4F8F9",
+            "6745": "1F241F",
+            "6660": "017240",
+            "6610": "0126D6",
+            "6505": "FFF116",
+            "6550": "F02B12",
+            "6645": "02A7A8",
+            "6510": "FFEB02",
+            "6570": "EF4150",
+            "6530": "FE660D",
+            "6595": "6F3568",
+            "6675": "AEE834"
         ]
         #expect(Dictionary(uniqueKeysWithValues: PaintSeries.goldenSoFlat.paints.map { ($0.code, $0.hex) }) == expected)
-        #expect(PaintSeries.goldenSoFlat.previewNote.contains("未提供 SoFlat 专用 RGB"))
+        #expect(Dictionary(uniqueKeysWithValues: GoldenPaint.all.map { ($0.code, $0.hex) }) == expected)
+        #expect(PaintSeries.goldenSoFlat.previewNote.contains("官方色样"))
         #expect(PaintSeries.goldenSoFlat.previewNote.contains("近似"))
+        for paint in PaintSeries.goldenSoFlat.paints {
+            #expect(PaintSwatchData.swatch(series: paint.series, code: paint.code)?.source == .goldenSoFlatSwatch)
+        }
     }
 
     @Test
@@ -690,6 +705,112 @@ struct PaintCatalogTests {
         }
     }
 
+    @Test
+    func testSourcedBrandSwatchesAreCompleteAndKeepTheirSeries() throws {
+        let expected: [(PaintSeries, String, String, PaintSwatchSource)] = [
+            (.tamiyaEnamel, "XF-53", "6D787C", .encycolorpedia),
+            (.tamiyaEnamel, "X-2", "FFFFFF", .tamiyaChart),
+            (.tamiyaAcrylic, "XF-53", "71848E", .tamiyaChart),
+            (.tamiyaLacquer, "LP-6", "005BAC", .tamiyaChart),
+            (.tamiyaSpray, "TS-102", "00A497", .tamiyaChart),
+            (.mrColor, "C13", "74858D", .mrHobbyChart),
+            (.aqueous, "H53", "546572", .mrHobbyChart),
+            (.acrysion, "N22", "546572", .mrHobbyChart)
+        ]
+        for (series, code, hex, source) in expected {
+            let paint = try #require(series.paints.first { $0.code == code })
+            #expect(paint.hex == hex)
+            #expect(PaintSwatchData.swatch(series: series, code: code)?.source == source)
+            let reference = PaintReference(series: series, paintCode: code)
+            #expect(reference.previewTarget?.hex == "#" + hex)
+            #expect(reference.previewNote.contains(source.note))
+            let target = try #require(reference.previewTarget)
+            #expect(MixingPalette.prompt(for: target, referencePaint: reference).contains(source.note))
+        }
+        var sourceCounts: [PaintSwatchSource: Int] = [:]
+        for series in PaintSeries.allCases where series != .goldenFluid {
+            for paint in series.paints {
+                let swatch = try #require(PaintSwatchData.swatch(series: series, code: paint.code))
+                sourceCounts[swatch.source, default: 0] += 1
+                #expect(paint.hex == swatch.hex)
+                #expect(paint.rgbDescription.contains("#" + swatch.hex))
+                let reference = PaintReference(series: series, paintCode: paint.code)
+                #expect(try JSONDecoder().decode(PaintReference.self, from: JSONEncoder().encode(reference)) == reference)
+            }
+        }
+        #expect(sourceCounts == [.encycolorpedia: 35, .tamiyaChart: 179, .mrHobbyChart: 128, .goldenSoFlatSwatch: 12])
+        #expect(PaintSwatchData.swatch(series: .goldenFluid, code: "2380") == nil)
+        #expect(PaintSwatchData.swatch(series: .mrColor, code: "H53") == nil)
+    }
+
+    @Test(arguments: PaintSeries.allCases.filter { $0 != .goldenFluid })
+    func testPreSRGBReferenceProjectsKeepOriginalTargetsAndDoses(_ series: PaintSeries) throws {
+        let defaults = try #require(UserDefaults(suiteName: "SRGBMigration.\(UUID().uuidString)"))
+        defer {
+            defaults.removeObject(forKey: RecipeLibrary.itemsKey)
+        }
+        let fixture = paletteResponse()
+        let responses: [MixingRole: MixingResponse] = [
+            .base: fixture.base, .shadow: fixture.shadow.recipe, .highlight: fixture.highlight.recipe
+        ]
+        var colors: [[String: Any]] = []
+        for paint in series.paints {
+            let hex = try #require(Int(paint.legacyHex, radix: 16))
+            let rgb = [(hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF]
+            for role in MixingRole.allCases {
+                let targetRGB = role == .base ? rgb : (role == .shadow ? [16, 16, 16] : [240, 240, 240])
+                let target = Dictionary(uniqueKeysWithValues: zip(["red", "green", "blue"], targetRGB))
+                let recipe: [String: Any] = [
+                    "target": target,
+                    "response": try JSONSerialization.jsonObject(with: JSONEncoder().encode(#require(responses[role]))),
+                    "role": role.rawValue, "paintSeries": PaintSeries.goldenSoFlat.rawValue,
+                    "paintSet": MixingPaintSet.soFlat12.rawValue,
+                    "referencePaint": ["series": series.rawValue, "paintCode": paint.code]
+                ]
+                colors.append([
+                    "red": targetRGB[0], "green": targetRGB[1], "blue": targetRGB[2],
+                    "name": "旧颜色", "mixingRecipe": recipe
+                ])
+            }
+        }
+        let data = try JSONSerialization.data(withJSONObject: [["text": "旧标准色项目", "colors": colors]])
+        defaults.set(data, forKey: RecipeLibrary.itemsKey)
+        var library = RecipeLibrary(defaults: defaults)
+        #expect(!library.isReadOnly)
+        #expect(library.errorMessage == nil)
+        #expect(defaults.data(forKey: RecipeLibrary.itemsKey) == data)
+        let project = try #require(library.items.first)
+        #expect(project.colors.count == series.paints.count * 3)
+        for color in project.colors {
+            let recipe = try #require(color.mixingRecipe)
+            let reference = try #require(recipe.referencePaint)
+            let paint = try #require(reference.paint)
+            #expect(reference.previewTarget?.hex == "#" + paint.legacyHex)
+            #expect(recipe.response == responses[recipe.role])
+            #expect(recipe.target == MixingTarget(red: color.red, green: color.green, blue: color.blue))
+            #expect(color.normalized().mixingRecipe == recipe)
+            if recipe.role == .base {
+                #expect(PaintReference.forColor(color) == reference)
+                let current = PaintReference(series: series, paintCode: paint.code)
+                #expect(current.previewTarget?.hex == "#" + paint.hex)
+                if paint.hex != paint.legacyHex {
+                    #expect(reference.previewNote.contains("保存时"))
+                    #expect(throws: MixingError.self) { try reference.validate(target: #require(current.previewTarget)) }
+                }
+            }
+        }
+        let renamed = library.renameItem(id: project.id, to: "保留旧配方")
+        #expect(renamed)
+        let restored = RecipeLibrary(defaults: defaults)
+        #expect(!restored.isReadOnly)
+        #expect(restored.items == library.items)
+        for color in try #require(restored.items.first).colors {
+            let reference = try #require(color.mixingRecipe?.referencePaint)
+            let object = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(reference)) as? [String: Any])
+            #expect(object["previewTargetSnapshot"] != nil)
+        }
+    }
+
     private var references: [PaintReference] {
         [
             PaintReference(series: .goldenSoFlat, paintCode: "6610"),
@@ -747,7 +868,8 @@ struct PaintCatalogTests {
         return MixingPaletteResponse(
             base: recipe(white: 150),
             shadow: MixingToneResponse(target: MixingTarget(red: 16, green: 16, blue: 16), recipe: recipe(white: 80)),
-            highlight: MixingToneResponse(target: MixingTarget(red: 240, green: 240, blue: 240), recipe: recipe(white: 190))
+            // Updated official light-gray references need a brighter fixture to preserve tone contrast.
+            highlight: MixingToneResponse(target: MixingTarget(red: 255, green: 255, blue: 255), recipe: recipe(white: 190))
         )
     }
 
