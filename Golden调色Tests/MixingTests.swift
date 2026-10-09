@@ -5,7 +5,7 @@ import Darwin
 
 struct MixingTests {
     @Test
-    func testOnlyTheTwelveRequestedPaintsAreAvailable() {
+    func testOriginalSoFlatPaletteRetainsTheTwelveRequestedPaints() {
         #expect(GoldenPaint.all.map(\.code) == [
             "6755", "6745", "6660", "6610", "6505", "6550",
             "6645", "6510", "6570", "6530", "6595", "6675"
@@ -310,6 +310,123 @@ struct MixingTests {
     }
 
     @Test
+    func testPreviewLightnessHandlesDarkAndMidtoneSwatches() {
+        let samples: [(Int, Double)] = [(0, 0), (10, 2.741748), (25, 8.757011), (128, 53.585013), (255, 100)]
+        for (channel, expected) in samples {
+            let value = Double(channel)
+            let target = MixingTarget(red: value, green: value, blue: value)
+            #expect(abs(target.perceptualLightness - expected) < 0.0001)
+        }
+        let green = MixingTarget(red: 0, green: 255, blue: 0)
+        let blue = MixingTarget(red: 0, green: 0, blue: 255)
+        #expect(green.perceptualLightness > blue.perceptualLightness)
+    }
+
+    @Test
+    func testSubtleShadowsAndHighlightsAreRejectedDespiteDistinctDoses() throws {
+        for difference in [1.0, 15.0, 30.0] {
+            let shadow = MixingTarget(red: 128 - difference, green: 160 - difference, blue: 128 - difference)
+            let highlight = MixingTarget(red: 128 + difference, green: 160 + difference, blue: 128 + difference)
+            for response in [paletteResponse(shadow: shadow), paletteResponse(highlight: highlight)] {
+                let data = try JSONEncoder().encode(response)
+                #expect(throws: MixingError.self) {
+                    try MixingPalette.decode(data, for: .initial)
+                }
+            }
+        }
+    }
+
+    @Test
+    func testModerateContrastPassesAtTheMinimumLightnessDifference() throws {
+        let base = MixingTarget(red: 128, green: 128, blue: 128)
+        let shadow = MixingTarget(red: 90, green: 90, blue: 90)
+        let highlight = MixingTarget(red: 168, green: 168, blue: 168)
+        let palette = try MixingPalette(target: base, response: paletteResponse(shadow: shadow, highlight: highlight))
+        #expect(palette.base.target == base)
+        #expect(palette.shadow.target == shadow)
+        #expect(palette.highlight.target == highlight)
+        // These adjacent RGB values fall just below the 15-point minimum.
+        let subtleShadow = MixingTarget(red: 91, green: 91, blue: 91)
+        let subtleHighlight = MixingTarget(red: 167, green: 167, blue: 167)
+        for response in [
+            paletteResponse(shadow: subtleShadow, highlight: highlight),
+            paletteResponse(shadow: shadow, highlight: subtleHighlight)
+        ] {
+            #expect(throws: MixingError.self) {
+                try MixingPalette(target: base, response: response)
+            }
+        }
+    }
+
+    @Test
+    func testNearBlackAndWhiteUseTheRemainingLightnessRange() throws {
+        let middle = MixingTarget(red: 128, green: 128, blue: 128)
+        let cases: [(MixingTarget, MixingTarget, MixingTarget)] = [
+            (MixingTarget(red: 32, green: 32, blue: 32), MixingTarget(red: 8, green: 8, blue: 8), middle),
+            (MixingTarget(red: 248, green: 248, blue: 248), middle, MixingTarget(red: 254, green: 254, blue: 254)),
+            (MixingTarget(red: 0, green: 0, blue: 1), MixingTarget(red: 0, green: 0, blue: 0), middle),
+            (MixingTarget(red: 255, green: 255, blue: 254), middle, MixingTarget(red: 255, green: 255, blue: 255))
+        ]
+        for (base, shadow, highlight) in cases {
+            let palette = try MixingPalette(target: base, response: paletteResponse(shadow: shadow, highlight: highlight))
+            #expect(palette.base.target == base)
+            #expect(palette.shadow.target == shadow)
+            #expect(palette.highlight.target == highlight)
+        }
+    }
+
+    @Test
+    func testNearBoundaryDoesNotPermitAnArbitrarilySmallDifference() {
+        let dark = MixingTarget(red: 32, green: 32, blue: 32)
+        let light = MixingTarget(red: 248, green: 248, blue: 248)
+        let subtleShadow = MixingTarget(red: 25, green: 25, blue: 25)
+        let subtleHighlight = MixingTarget(red: 250, green: 250, blue: 250)
+        #expect(throws: MixingError.self) {
+            try MixingPalette(target: dark, response: paletteResponse(shadow: subtleShadow))
+        }
+        #expect(throws: MixingError.self) {
+            try MixingPalette(target: light, response: paletteResponse(highlight: subtleHighlight))
+        }
+    }
+
+    @Test
+    func testReferenceAndBlendResponsesRejectInsufficientToneContrast() throws {
+        for reference in [
+            PaintReference(series: .tamiyaAcrylic, paintCode: "XF-53"),
+            PaintReference(series: .mrColor, paintCode: "C13")
+        ] {
+            let target = try #require(reference.previewTarget)
+            let subtle = MixingTarget(
+                red: Double(target.red - 1), green: Double(target.green - 1), blue: Double(target.blue - 1)
+            )
+            let data = try JSONEncoder().encode(paletteResponse(shadow: subtle))
+            #expect(throws: MixingError.self) {
+                try MixingPalette.decode(data, for: target, referencePaint: reference)
+            }
+        }
+        let request = try sampleBlendRequest()
+        var blend = try #require(JSONSerialization.jsonObject(with: blendFixture()) as? [String: Any])
+        let subtleHighlight = MixingTarget(red: 129, green: 161, blue: 129)
+        blend["palette"] = try JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(paletteResponse(highlight: subtleHighlight))
+        )
+        let data = try JSONSerialization.data(withJSONObject: blend)
+        #expect(throws: MixingError.self) {
+            try request.decodePalette(data)
+        }
+    }
+
+    @Test
+    func testPreviouslySavedSubtleShadowRemainsReadable() throws {
+        let recipe = try MixingRecipe(
+            target: MixingTarget(red: 127, green: 159, blue: 127),
+            response: toneRecipe(white: 100), role: .shadow
+        )
+        let saved = try JSONEncoder().encode(recipe)
+        #expect(try JSONDecoder().decode(MixingRecipe.self, from: saved) == recipe)
+    }
+
+    @Test
     func testDistinctRGBLabelsCannotHideIdenticalPaintFormulas() {
         let valid = paletteResponse()
         let repeated = MixingPaletteResponse(
@@ -392,6 +509,7 @@ struct MixingTests {
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         object.removeValue(forKey: "role")
         object.removeValue(forKey: "model")
+        object.removeValue(forKey: "paintSeries")
         let legacy = try JSONSerialization.data(withJSONObject: object)
         let decoded = try JSONDecoder().decode(MixingRecipe.self, from: legacy)
         #expect(decoded == recipe)
@@ -512,13 +630,13 @@ struct MixingTests {
         #expect(request.totalPercentage == 90)
         #expect(request.sources.map(\.percentage) == [40, 20, 10, 20])
         for source in request.sources {
-            #expect(request.prompt.contains(source.target.description))
-            #expect(request.prompt.contains("输入 \(source.percentageText)%"))
+            #expect(request.prompt().contains(source.target.description))
+            #expect(request.prompt().contains("输入 \(source.percentageText)%"))
         }
         #expect(request.sourceDescription.contains("44.44%"))
         #expect(request.sourceDescription.contains("22.22%"))
         #expect(request.sourceDescription.contains("11.11%"))
-        #expect(request.prompt.contains("不得将不足 100% 的部分补成"))
+        #expect(request.prompt().contains("不得将不足 100% 的部分补成"))
     }
 
     @Test
@@ -660,26 +778,192 @@ struct MixingTests {
         """#
         try Data(script.utf8).write(to: executable)
         try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
-        try blendFixture().write(to: directory.appendingPathComponent("fixture.json"))
-        let request = try sampleBlendRequest()
         let configuration = AIConfiguration(
             model: AIModelSelection(modelID: "blend-integration-model", reasoningEffort: .high),
             executablePath: executable.path
         )
-        let palette = try await CodexMixingService().generate(from: request, configuration: configuration)
-        let prompt = try String(contentsOf: directory.appendingPathComponent("prompt.txt"), encoding: .utf8)
-        #expect(prompt == request.prompt)
-        let arguments = try String(contentsOf: directory.appendingPathComponent("arguments.txt"), encoding: .utf8)
-        #expect(arguments.contains("--model\nblend-integration-model\n"))
-        #expect(arguments.contains("model_reasoning_effort=\"high\""))
-        let schema = try Data(contentsOf: directory.appendingPathComponent("schema.json"))
-        let expectedSchema = try ColorBlendRequest.outputSchema()
-        #expect(schema == expectedSchema)
-        let object = try #require(JSONSerialization.jsonObject(with: schema) as? [String: Any])
-        #expect(Set(object["required"] as? [String] ?? []) == ["synthesis", "palette"])
-        #expect(palette.base.target == .initial)
-        #expect(palette.base.synthesis?.sources == request.sources)
-        #expect(palette.base.model == configuration.model)
+        let cases: [(ColorBlendRequest, MixingPaintSet)] = [
+            (try sampleBlendRequest(), .soFlat12),
+            (try brandBlendRequest(), .soFlat12),
+            (try brandBlendRequest(), .fluid13)
+        ]
+        for (request, paintSet) in cases {
+            try blendFixture(paintSet: paintSet).write(to: directory.appendingPathComponent("fixture.json"))
+            let palette = try await CodexMixingService().generate(
+                from: request, paintSet: paintSet, configuration: configuration
+            )
+            let prompt = try String(contentsOf: directory.appendingPathComponent("prompt.txt"), encoding: .utf8)
+            #expect(prompt == request.prompt(paintSet: paintSet))
+            let arguments = try String(contentsOf: directory.appendingPathComponent("arguments.txt"), encoding: .utf8)
+            #expect(arguments.contains("--model\nblend-integration-model\n"))
+            #expect(arguments.contains("model_reasoning_effort=\"high\""))
+            let schema = try Data(contentsOf: directory.appendingPathComponent("schema.json"))
+            let expectedSchema = try ColorBlendRequest.outputSchema(paintSet: paintSet)
+            #expect(schema == expectedSchema)
+            let object = try #require(JSONSerialization.jsonObject(with: schema) as? [String: Any])
+            #expect(Set(object["required"] as? [String] ?? []) == ["synthesis", "palette"])
+            #expect(palette.base.target == .initial)
+            #expect(palette.base.synthesis?.sources == request.sources)
+            #expect(palette.base.model == configuration.model)
+            #expect(palette.base.paintSet == paintSet)
+        }
+    }
+
+    @Test
+    func testBrandBlendCarriesColorCodesAndRelativeWeightsToBothPaintSets() throws {
+        let request = try brandBlendRequest()
+        #expect(request.sources.map(\.referencePaint?.paintCode) == ["H1", "H2"])
+        #expect(request.sources.map(\.percentage) == [30, 70])
+        #expect(request.totalPercentage == 100)
+        for paintSet in MixingPaintSet.selectable {
+            let prompt = request.prompt(paintSet: paintSet)
+            for source in request.sources {
+                let reference = try #require(source.referencePaint)
+                #expect(prompt.contains(reference.summary))
+                #expect(prompt.contains(reference.previewNote))
+                #expect(prompt.contains("输入 \(source.percentageText)%"))
+            }
+            #expect(prompt.contains("归一化 30.00%"))
+            #expect(prompt.contains("归一化 70.00%"))
+            #expect(prompt.contains(paintSet.title))
+            #expect(prompt.contains("不是最终调色原料，不得写入 ingredients 或 steps"))
+            #expect(!prompt.contains("用户提供的不是颜料编号"))
+        }
+    }
+
+    @Test
+    func testMixedBlendDraftRequiresExplicitReferenceAndClearsSharedCodesAcrossSeries() throws {
+        let rgb = ColorBlendEntry(target: .initial, percentage: 70)
+        var reference = ColorBlendEntry(target: MixingTarget(red: 12, green: 34, blue: 56), percentage: 30)
+        reference.inputMode = .reference
+        #expect(ColorBlendEntry.request(from: [reference, rgb]) == nil)
+        reference.selectReferenceSeries(.aqueous)
+        reference.selectedPaintCode = "H1"
+        let request = try #require(ColorBlendEntry.request(from: [reference, rgb]))
+        #expect(request.sources[0].referencePaint?.paintCode == "H1")
+        #expect(request.sources[0].referencePaint?.series == .aqueous)
+        #expect(request.sources[0].target == PaintReference(series: .aqueous, paintCode: "H1").previewTarget)
+        #expect(request.sources[1].referencePaint == nil)
+        #expect(request.sources[1].target == .initial)
+
+        reference.inputMode = .rgb
+        #expect(reference.source?.referencePaint == nil)
+        #expect(reference.source?.target == MixingTarget(red: 12, green: 34, blue: 56))
+        reference.inputMode = .reference
+        #expect(reference.source?.referencePaint?.paintCode == "H1")
+        reference.selectReferenceSeries(.tamiyaAcrylic)
+        #expect(reference.selectedPaintCode == nil)
+        reference.selectedPaintCode = "X-2"
+        let acrylic = try #require(reference.source)
+        reference.selectReferenceSeries(.tamiyaEnamel)
+        #expect(reference.selectedPaintCode == nil)
+        #expect(ColorBlendEntry.request(from: [reference, rgb]) == nil)
+        reference.selectedPaintCode = "X-2"
+        let enamel = try #require(reference.source)
+        let sameCode = try ColorBlendRequest(sources: [acrylic, enamel])
+        #expect(sameCode.sources.map(\.referencePaint?.series) == [.tamiyaAcrylic, .tamiyaEnamel])
+        #expect(sameCode.sourceDescription.contains(PaintSeries.tamiyaAcrylic.title))
+        #expect(sameCode.sourceDescription.contains(PaintSeries.tamiyaEnamel.title))
+        reference.selectedPaintCode = "H1"
+        #expect(ColorBlendEntry.request(from: [reference, rgb]) == nil)
+    }
+
+    @Test
+    func testBrandBlendRejectsUnknownCodesAndMismatchedRGBIncludingSavedSources() throws {
+        let valid = ColorBlendSource(target: .initial, percentage: 70)
+        for reference in [
+            PaintReference(series: .aqueous, paintCode: "H1"),
+            PaintReference(series: .aqueous, paintCode: "H999")
+        ] {
+            let invalid = ColorBlendSource(target: .initial, percentage: 30, referencePaint: reference)
+            #expect(throws: MixingError.self) {
+                try ColorBlendRequest(sources: [invalid, valid])
+            }
+            let sourceData = try JSONEncoder().encode([invalid, valid])
+            let object: [String: Any] = [
+                "sources": try JSONSerialization.jsonObject(with: sourceData),
+                "target": ["red": 128, "green": 160, "blue": 128],
+                "explanation": "无效的参考色不能进入已保存合成。"
+            ]
+            let data = try JSONSerialization.data(withJSONObject: object)
+            #expect(throws: MixingError.self) {
+                try JSONDecoder().decode(ColorBlendSynthesis.self, from: data)
+            }
+        }
+    }
+
+    @Test
+    func testSavedBlendsReadLegacyRGBSourcesAndPreserveReferenceRGBSnapshots() throws {
+        let request = try sampleBlendRequest()
+        let original = try ColorBlendSynthesis(sources: request.sources, target: .initial, explanation: "旧版合成")
+        var object = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(original)) as? [String: Any]
+        )
+        // Pre-feature JSON had only target and percentage in each source.
+        let sources = try #require(object["sources"] as? [[String: Any]])
+        object["sources"] = sources.map { source in source.filter { $0.key != "referencePaint" } }
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+        #expect(try JSONDecoder().decode(ColorBlendSynthesis.self, from: legacyData) == original)
+
+        let referenceData = Data(#"{"series":"aqueous","paintCode":"H1","previewTargetSnapshot":{"red":230,"green":231,"blue":232}}"#.utf8)
+        let reference = try JSONDecoder().decode(PaintReference.self, from: referenceData)
+        let snapshot = MixingTarget(red: 230, green: 231, blue: 232)
+        let mixed = try ColorBlendSynthesis(
+            sources: [
+                ColorBlendSource(target: snapshot, percentage: 30, referencePaint: reference),
+                ColorBlendSource(target: .initial, percentage: 70)
+            ], target: .initial, explanation: "保留原始标准色预览"
+        )
+        let restored = try JSONDecoder().decode(ColorBlendSynthesis.self, from: JSONEncoder().encode(mixed))
+        #expect(restored == mixed)
+        #expect(restored.sources[0].referencePaint?.previewTarget == snapshot)
+        #expect(restored.formattedText.contains("#H1"))
+        #expect(restored.formattedText.contains("RGB 230, 231, 232"))
+    }
+
+    @Test
+    func testBrandBlendProvenanceSurvivesSavingAllTonesInEitherGoldenPaintSet() throws {
+        for paintSet in MixingPaintSet.selectable {
+            try withDefaults { defaults in
+                var library = RecipeLibrary(defaults: defaults)
+                let savedID = library.addItem(named: "H1 30% + H2 70%")
+                let id = try #require(savedID)
+                let request = try brandBlendRequest()
+                let palette = try request.decodePalette(blendFixture(paintSet: paintSet), paintSet: paintSet)
+                let saved = library.addMixingPalette(palette, to: id)
+                #expect(saved)
+                var reloaded = RecipeLibrary(defaults: defaults)
+                let item = try #require(reloaded.item(id: id))
+                #expect(item.colors.compactMap(\.mixingRecipe) == palette.recipes)
+                for recipe in item.colors.compactMap(\.mixingRecipe) {
+                    #expect(recipe.synthesis?.sources == request.sources)
+                    #expect(recipe.referencePaint == nil)
+                    #expect(recipe.paintSet == paintSet)
+                    #expect(recipe.response.ingredients.reduce(0) { $0 + $1.drops } == 200)
+                    #expect(Set(recipe.response.ingredients.map(\.paintCode)).isSubset(of: Set(paintSet.paints.map(\.code))))
+                    for source in request.sources {
+                        let reference = try #require(source.referencePaint)
+                        #expect(recipe.formattedText.contains(reference.summary))
+                        #expect(recipe.formattedText.contains("\(source.percentageText)%"))
+                    }
+                }
+                let shadow = try #require(item.colors.first { $0.mixingRecipe?.role == .shadow })
+                let removed = reloaded.removeColor(itemID: id, colorID: shadow.id)
+                #expect(removed)
+                #expect(RecipeLibrary(defaults: defaults).item(id: id)?.colors.compactMap(\.mixingRecipe) == [
+                    palette.base, palette.highlight
+                ])
+            }
+        }
+    }
+
+    private func brandBlendRequest() throws -> ColorBlendRequest {
+        try ColorBlendRequest(sources: try [("H1", 30.0), ("H2", 70.0)].map { code, percentage in
+            let reference = PaintReference(series: .aqueous, paintCode: code)
+            return ColorBlendSource(
+                target: try #require(reference.previewTarget), percentage: percentage, referencePaint: reference
+            )
+        })
     }
 
     private func sampleBlendRequest() throws -> ColorBlendRequest {
@@ -691,8 +975,10 @@ struct MixingTests {
         ])
     }
 
-    private func blendFixture(explanation: String = "AI 合成说明测试") throws -> Data {
-        let palette = try JSONSerialization.jsonObject(with: JSONEncoder().encode(paletteResponse()))
+    private func blendFixture(
+        explanation: String = "AI 合成说明测试", paintSet: MixingPaintSet = .soFlat12
+    ) throws -> Data {
+        let palette = try JSONSerialization.jsonObject(with: JSONEncoder().encode(paletteResponse(paintSet: paintSet)))
         return try JSONSerialization.data(withJSONObject: [
             "synthesis": [
                 "target": ["red": 128, "green": 160, "blue": 128],
@@ -704,24 +990,29 @@ struct MixingTests {
 
     private func paletteResponse(
         shadow: MixingTarget = MixingTarget(red: 64, green: 80, blue: 64),
-        highlight: MixingTarget = MixingTarget(red: 220, green: 235, blue: 220)
+        highlight: MixingTarget = MixingTarget(red: 220, green: 235, blue: 220),
+        paintSet: MixingPaintSet = .soFlat12
     ) -> MixingPaletteResponse {
         MixingPaletteResponse(
-            base: response(),
-            shadow: MixingToneResponse(target: shadow, recipe: toneRecipe(white: 100)),
-            highlight: MixingToneResponse(target: highlight, recipe: toneRecipe(white: 200))
+            base: response(ingredients: doses(paintSet: paintSet)),
+            shadow: MixingToneResponse(target: shadow, recipe: toneRecipe(white: 100, paintSet: paintSet)),
+            highlight: MixingToneResponse(target: highlight, recipe: toneRecipe(white: 200, paintSet: paintSet))
         )
     }
 
-    private func toneRecipe(white: Int) -> MixingResponse {
-        response(ingredients: GoldenPaint.all.map {
-            PaintDose(paintCode: $0.code, drops: $0.code == "6755" ? white : ($0.code == "6745" ? 200 - white : 0))
+    private func toneRecipe(white: Int, paintSet: MixingPaintSet = .soFlat12) -> MixingResponse {
+        let whiteCode = paintSet == .fluid13 ? "2380" : "6755"
+        let blackCode = paintSet == .fluid13 ? "2040" : "6745"
+        return response(ingredients: paintSet.paints.map {
+            PaintDose(paintCode: $0.code, drops: $0.code == whiteCode ? white : ($0.code == blackCode ? 200 - white : 0))
         })
     }
 
-    private func doses(white: Int = 199) -> [PaintDose] {
-        GoldenPaint.all.map {
-            PaintDose(paintCode: $0.code, drops: $0.code == "6755" ? white : ($0.code == "6745" ? 1 : 0))
+    private func doses(white: Int = 199, paintSet: MixingPaintSet = .soFlat12) -> [PaintDose] {
+        let whiteCode = paintSet == .fluid13 ? "2380" : "6755"
+        let blackCode = paintSet == .fluid13 ? "2040" : "6745"
+        return paintSet.paints.map {
+            PaintDose(paintCode: $0.code, drops: $0.code == whiteCode ? white : ($0.code == blackCode ? 1 : 0))
         }
     }
 

@@ -120,8 +120,7 @@ final class Golden__UITests: XCTestCase {
         let model = app.textFields["aiModelField"]
         XCTAssertTrue(model.waitForExistence(timeout: 5))
         replaceText(in: model, with: "ui-custom-model")
-        app.popUpButtons["aiReasoningPicker"].click()
-        app.menuItems["低 · low"].click()
+        chooseMenuOption("低 · low", picker: "aiReasoningPicker", in: app)
         app.typeKey("w", modifierFlags: [.command])
         waitUntilGone(model)
 
@@ -301,6 +300,359 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeSavedMixingRecipeButton"].click()
     }
 
+    func testTamiyaReferenceUsesGoldenIngredientsAndSurvivesSaving() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture())
+        createRecipe("Tamiya reference project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        app.radioButtons["品牌标准色"].click()
+        chooseMenuOption("Lacquer 溶剂型漆 · LP", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("LP-34", in: app)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10), app.sheets.debugDescription)
+        XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#LP-34") == true)
+        XCTAssertTrue(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-LP-34"].firstMatch.exists)
+
+        let brand = app.popUpButtons["referencePaintBrandPicker"]
+        revealBlendInput(brand, in: app, scrollDown: false)
+        chooseMenuOption("郡士 Mr.Hobby", picker: "referencePaintBrandPicker", in: app)
+        XCTAssertFalse(app.buttons["mixingRole-base"].exists)
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        XCTAssertFalse(generate.isEnabled)
+        XCTAssertFalse(app.staticTexts["selectedReferencePaint"].exists)
+        chooseMenuOption("田宫 Tamiya", picker: "referencePaintBrandPicker", in: app)
+        chooseMenuOption("Lacquer 溶剂型漆 · LP", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("LP-34", in: app)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+
+        app.buttons["查看本色配方"].firstMatch.click()
+        let savedReference = app.staticTexts["savedReferencePaint"].firstMatch
+        XCTAssertTrue(savedReference.waitForExistence(timeout: 5))
+        XCTAssertTrue((savedReference.value as? String)?.contains("田宫 Tamiya") == true)
+        XCTAssertTrue((savedReference.value as? String)?.contains("#LP-34") == true)
+        XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
+        app.buttons["closeSavedMixingRecipeButton"].click()
+        waitUntilGone(savedReference)
+
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let selected = app.staticTexts["selectedReferencePaint"]
+        XCTAssertTrue(selected.waitForExistence(timeout: 5))
+        XCTAssertTrue((selected.value as? String)?.contains("#LP-34") == true)
+        app.buttons["closeAIMixingButton"].click()
+        waitUntilGone(selected)
+        app.buttons["编辑颜色：本色 · UI 本色"].click()
+        let editorSeries = app.popUpButtons["editorPaintSeriesPicker"]
+        XCTAssertTrue(editorSeries.waitForExistence(timeout: 5))
+        XCTAssertEqual(editorSeries.value as? String, "Lacquer 溶剂型漆 · LP")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    func testTamiyaSprayReferenceGeneratesSavesAndReopensWithGoldenPaints() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture())
+        createRecipe("TS reference project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        app.radioButtons["品牌标准色"].click()
+        chooseMenuOption("喷罐漆 · TS", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("TS-32", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 137, 147, 145") == true)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10), app.sheets.debugDescription)
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#TS-32") == true)
+        XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
+        XCTAssertTrue(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-TS-32"].firstMatch.exists)
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+
+        for role in ["本色", "阴影色", "高光色"] {
+            app.buttons["查看\(role)配方"].firstMatch.click()
+            let savedReference = app.staticTexts["savedReferencePaint"]
+            XCTAssertTrue(savedReference.waitForExistence(timeout: 5))
+            XCTAssertTrue((savedReference.value as? String)?.contains("喷罐漆 · TS") == true)
+            XCTAssertTrue((savedReference.value as? String)?.contains("#TS-32") == true)
+            XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
+            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, "合计 200 滴")
+            app.buttons["closeSavedMixingRecipeButton"].click()
+            waitUntilGone(savedReference)
+        }
+
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let selected = app.staticTexts["selectedReferencePaint"]
+        XCTAssertTrue(selected.waitForExistence(timeout: 5))
+        XCTAssertTrue((selected.value as? String)?.contains("#TS-32") == true)
+        XCTAssertEqual(app.popUpButtons["referencePaintSeriesPicker"].value as? String, "喷罐漆 · TS")
+        app.buttons["closeAIMixingButton"].click()
+        waitUntilGone(selected)
+        app.buttons["编辑颜色：本色 · UI 本色"].click()
+        let editorSeries = app.popUpButtons["editorPaintSeriesPicker"]
+        XCTAssertTrue(editorSeries.waitForExistence(timeout: 5))
+        XCTAssertEqual(editorSeries.value as? String, "喷罐漆 · TS")
+        app.typeKey(.escape, modifierFlags: [])
+    }
+
+    func testMrHobbyReferenceIsClearedWhenSwitchingToRGBAndBlend() throws {
+        let app = launchApp(
+            mixingResponse: try threeToneFixture(whiteCode: "2380", blackCode: "2040"),
+            blendResponse: try blendFixture(whiteCode: "2380", blackCode: "2040")
+        )
+        createRecipe("MrHobby reference project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        app.radioButtons["品牌标准色"].click()
+        chooseMenuOption("郡士 Mr.Hobby", picker: "referencePaintBrandPicker", in: app)
+        selectReference("C13", in: app)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.staticTexts["savedReferencePaint"].waitForExistence(timeout: 10), app.sheets.debugDescription)
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#C13") == true)
+        XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN Fluid Acrylics")
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-C13"].firstMatch.exists)
+
+        let single = app.radioButtons["单个颜色"]
+        revealBlendInput(single, in: app, scrollDown: false)
+        single.click()
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["savedReferencePaint"].exists)
+
+        let blend = app.radioButtons["多色合成"]
+        revealBlendInput(blend, in: app, scrollDown: false)
+        blend.click()
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.staticTexts["blendTargetRGB"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["savedReferencePaint"].exists)
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+        app.buttons["查看本色配方"].firstMatch.click()
+        XCTAssertTrue(app.staticTexts["blendTargetRGB"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["savedReferencePaint"].exists)
+        XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN Fluid Acrylics")
+        app.buttons["closeSavedMixingRecipeButton"].click()
+    }
+
+    func testReferenceCannotSaveAIResponseUsingForeignIngredients() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture(whiteCode: "LP-2", blackCode: "LP-1"))
+        createRecipe("Invalid ingredients project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        app.radioButtons["品牌标准色"].click()
+        selectReference("XF-53", in: app)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.staticTexts["mixingError"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["mixingRole-base"].exists)
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        app.buttons["closeAIMixingButton"].click()
+    }
+
+    func testFluidIngredientsDisplayAndRemainInSavedRecipes() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture(whiteCode: "2380", blackCode: "2040"))
+        createRecipe("Fluid recipe project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let summary = app.staticTexts["mixingPaintSummary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue((summary.value as? String)?.contains("12 色") == true)
+        let soFlatNote = app.staticTexts["paintPreviewNote-goldenSoFlat"]
+        XCTAssertTrue((soFlatNote.value as? String)?.contains("近似屏幕参考") == true)
+        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        let fluidNote = app.staticTexts["paintPreviewNote-goldenFluid"]
+        XCTAssertTrue(fluidNote.waitForExistence(timeout: 5))
+        XCTAssertTrue((fluidNote.value as? String)?.contains("官方调色器的 sRGB") == true)
+        XCTAssertTrue((summary.value as? String)?.contains("13 色") == true)
+        XCTAssertFalse((summary.value as? String)?.contains("SoFlat") == true)
+        XCTAssertFalse(app.descendants(matching: .any)["availablePaint-6755"].firstMatch.exists)
+        app.radioButtons["品牌标准色"].click()
+        chooseMenuOption("GOLDEN", picker: "referencePaintBrandPicker", in: app)
+        chooseMenuOption("Fluid Acrylics · 指定 13 色", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("2276", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 243, 60, 0") == true)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
+        XCTAssertTrue((app.buttons["mixingRole-base"].value as? String)?.contains("RGB 243, 60, 0") == true)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+        let generatedWhite = app.descendants(matching: .any)["recipePaint-2380"].firstMatch
+        revealPaintRow(generatedWhite, in: app.scrollViews["mixingResultsScrollView"])
+        XCTAssertTrue(generatedWhite.label.contains("GOLDEN Fluid Acrylics"), generatedWhite.debugDescription)
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+        app.buttons["查看本色配方"].firstMatch.click()
+        let series = app.staticTexts["savedMixingPaintSeries"]
+        XCTAssertTrue(series.waitForExistence(timeout: 5))
+        XCTAssertEqual(series.value as? String, "调色用漆：GOLDEN Fluid Acrylics")
+        XCTAssertTrue((app.staticTexts["mixingTargetRGB"].value as? String)?.contains("RGB 243, 60, 0") == true)
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#2276") == true)
+        let fluidWhite = app.descendants(matching: .any)["recipePaint-2380"].firstMatch
+        revealPaintRow(fluidWhite, in: app.scrollViews["savedMixingRecipeScrollView"])
+        XCTAssertTrue(fluidWhite.label.contains("199 滴"), fluidWhite.label)
+        XCTAssertTrue(fluidWhite.label.contains("GOLDEN Fluid Acrylics"), fluidWhite.label)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["recipePaint-2407"].firstMatch.exists)
+        app.buttons["closeSavedMixingRecipeButton"].click()
+        waitUntilGone(series)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let picker = app.popUpButtons["mixingPaintSetPicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        XCTAssertEqual(picker.value as? String, "Fluid Acrylics 13 色")
+        app.buttons["closeAIMixingButton"].click()
+    }
+
+    func testSwitchingIngredientKitClearsResultsAndRejectsOtherKit() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture())
+        createRecipe("Kit selection project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["saveAIMixingButton"].isEnabled)
+        XCTAssertTrue(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-2380"].firstMatch.exists)
+
+        let picker = app.popUpButtons["mixingPaintSetPicker"]
+        revealBlendInput(picker, in: app, scrollDown: false)
+        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        XCTAssertFalse(app.buttons["mixingRole-base"].exists)
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        XCTAssertFalse(app.buttons["复制三色配方"].isEnabled)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        // The fixture still contains SoFlat codes: Fluid must reject them.
+        XCTAssertTrue(app.staticTexts["mixingError"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+
+        revealBlendInput(picker, in: app, scrollDown: false)
+        chooseMenuOption("SoFlat 12 色", picker: "mixingPaintSetPicker", in: app)
+        XCTAssertFalse(app.staticTexts["mixingError"].exists)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["saveAIMixingButton"].isEnabled)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-2380"].firstMatch.exists)
+        app.buttons["closeAIMixingButton"].click()
+    }
+
+    private func revealPaintRow(_ row: XCUIElement, in scrollView: XCUIElement) {
+        for _ in 0..<16 {
+            if row.exists && row.isHittable { break }
+            scrollView.scroll(byDeltaX: 0, deltaY: -200)
+        }
+        XCTAssertTrue(row.isHittable, row.debugDescription)
+    }
+
+    private func selectReference(_ code: String, in app: XCUIApplication) {
+        let search = app.textFields["referencePaintSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        replaceText(in: search, with: code)
+        let paint = app.buttons["referencePaint-\(code)"]
+        XCTAssertTrue(paint.waitForExistence(timeout: 5))
+        paint.click()
+        XCTAssertTrue(app.staticTexts["selectedReferencePaint"].exists)
+    }
+
+    private func chooseMenuOption(_ option: String, picker: String, in app: XCUIApplication) {
+        let control = app.popUpButtons[picker]
+        XCTAssertTrue(control.waitForExistence(timeout: 5))
+        app.activate()
+        control.click()
+        let item = app.menuItems[option]
+        // A restored macOS window can consume the first click while becoming active.
+        if !item.waitForExistence(timeout: 2) { control.click() }
+        XCTAssertTrue(item.waitForExistence(timeout: 5))
+        item.click()
+    }
+
+    func testBrandBlendH1AndH2CanBeGeneratedSavedAndViewed() throws {
+        let app = launchApp(blendResponse: try blendFixture())
+        createRecipe("H1 H2 blend project", in: app)
+        openBlendEditor(in: app)
+        let generate = app.buttons["generateMixingButton"]
+        for (index, code, name, percentage) in [(0, "H1", "白色", "30"), (1, "H2", "黑色", "70")] {
+            let modeID = "blendInputMode-\(index)"
+            revealBlendInput(app.popUpButtons[modeID], in: app)
+            chooseMenuOption("品牌标准色", picker: modeID, in: app)
+            XCTAssertFalse(generate.isEnabled)
+            let brandID = "blend\(index)PaintBrandPicker"
+            revealBlendInput(app.popUpButtons[brandID], in: app)
+            chooseMenuOption("郡士 Mr.Hobby", picker: brandID, in: app)
+            let seriesID = "blend\(index)PaintSeriesPicker"
+            revealBlendInput(app.popUpButtons[seriesID], in: app)
+            chooseMenuOption("水性 Hobby Color · H", picker: seriesID, in: app)
+            let search = app.textFields["blendPaintSearchField-\(index)"]
+            revealBlendInput(search, in: app)
+            replaceText(in: search, with: code)
+            let codeID = "blendPaintCodePicker-\(index)"
+            revealBlendInput(app.popUpButtons[codeID], in: app)
+            chooseMenuOption("\(code) · \(name)", picker: codeID, in: app)
+            XCTAssertTrue((app.staticTexts["blendSelectedReference-\(index)"].value as? String)?.contains("#\(code)") == true)
+            let percentageField = app.textFields["blendPercentageField-\(index)"]
+            revealBlendInput(percentageField, in: app)
+            replaceText(in: percentageField, with: percentage)
+        }
+        XCTAssertTrue(generate.isEnabled)
+        XCTAssertEqual(app.staticTexts["blendPercentageStatus"].value as? String, "占比合计 100% · 按相对比例换算为 100%")
+        revealBlendInput(generate, in: app)
+        generate.click()
+        let target = app.staticTexts["blendTargetRGB"]
+        XCTAssertTrue(target.waitForExistence(timeout: 10), app.sheets.debugDescription)
+        XCTAssertEqual(target.value as? String, "RGB 128, 160, 128")
+
+        // Switching the source paint system must invalidate the generated result and clear its old code.
+        let seriesID = "blend0PaintSeriesPicker"
+        revealBlendInput(app.popUpButtons[seriesID], in: app, scrollDown: false)
+        chooseMenuOption("Mr.Color 溶剂型漆 · C", picker: seriesID, in: app)
+        XCTAssertFalse(target.exists)
+        XCTAssertFalse(generate.isEnabled)
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+        XCTAssertFalse(app.staticTexts["blendSelectedReference-0"].exists)
+        chooseMenuOption("水性 Hobby Color · H", picker: seriesID, in: app)
+        let codeID = "blendPaintCodePicker-0"
+        revealBlendInput(app.popUpButtons[codeID], in: app)
+        chooseMenuOption("H1 · 白色", picker: codeID, in: app)
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(target.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["savedReferencePaint"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-H1"].firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any)["recipePaint-H2"].firstMatch.exists)
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+
+        for role in ["本色", "阴影色", "高光色"] {
+            app.buttons["查看\(role)配方"].firstMatch.click()
+            XCTAssertTrue(target.waitForExistence(timeout: 5))
+            for (index, code, percentage) in [(0, "H1", "30"), (1, "H2", "70")] {
+                let source = app.staticTexts["blendSourceSummary-\(index)"]
+                XCTAssertTrue(source.exists)
+                let summary = source.value as? String ?? ""
+                XCTAssertTrue(summary.contains("郡士 Mr.Hobby"))
+                XCTAssertTrue(summary.contains("水性 Hobby Color · H"))
+                XCTAssertTrue(summary.contains("#\(code)"))
+                XCTAssertTrue(summary.contains("\(percentage)%"))
+            }
+            XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
+            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, "合计 200 滴")
+            XCTAssertTrue(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+            app.buttons["closeSavedMixingRecipeButton"].click()
+            waitUntilGone(target)
+        }
+    }
+
     private func openBlendEditor(in app: XCUIApplication) {
         app.buttons["aiMixingButton"].firstMatch.click()
         let mode = app.radioButtons["多色合成"]
@@ -311,15 +663,21 @@ final class Golden__UITests: XCTestCase {
 
     private func revealBlendInput(_ element: XCUIElement, in app: XCUIApplication, scrollDown: Bool = true) {
         let scrollView = app.scrollViews["mixingInputScrollView"]
+        // macOS can report a clipped button as hittable while its center sits behind the sheet footer.
+        func isVisible() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let viewport = scrollView.frame.insetBy(dx: 0, dy: 8)
+            return element.frame.minY >= viewport.minY && element.frame.maxY <= viewport.maxY
+        }
         for _ in 0..<8 {
-            if element.exists && element.isHittable { break }
+            if isVisible() { break }
             scrollView.scroll(byDeltaX: 0, deltaY: scrollDown ? -140 : 140)
         }
-        XCTAssertTrue(element.isHittable)
+        XCTAssertTrue(isVisible(), element.debugDescription)
     }
 
-    private func blendFixture() throws -> String {
-        let palette = try JSONSerialization.jsonObject(with: Data(threeToneFixture().utf8))
+    private func blendFixture(whiteCode: String = "6755", blackCode: String = "6745") throws -> String {
+        let palette = try JSONSerialization.jsonObject(with: Data(threeToneFixture(whiteCode: whiteCode, blackCode: blackCode).utf8))
         return String(decoding: try JSONSerialization.data(withJSONObject: [
             "synthesis": [
                 "target": ["red": 128, "green": 160, "blue": 128],
@@ -329,12 +687,21 @@ final class Golden__UITests: XCTestCase {
         ]), as: UTF8.self)
     }
 
-    private func threeToneFixture() throws -> String {
-        let codes = ["6755", "6745", "6660", "6610", "6505", "6550", "6645", "6510", "6570", "6530", "6595", "6675"]
+    private func threeToneFixture(whiteCode: String = "6755", blackCode: String = "6745") throws -> String {
+        let isGolden = ["6755", "2380"].contains(whiteCode)
+        let codes: [String]
+        switch whiteCode {
+        case "6755":
+            codes = ["6755", "6745", "6660", "6610", "6505", "6550", "6645", "6510", "6570", "6530", "6595", "6675"]
+        case "2380":
+            codes = ["2009", "2008", "2210", "2305", "2260", "2255", "2270", "2275", "2040", "2380", "2276", "2150", "2407"]
+        default:
+            codes = [whiteCode, blackCode]
+        }
         func recipe(_ name: String, white: Int) -> [String: Any] {
             let ingredients: [[String: Any]] = codes.map {
-                ["paintCode": $0, "drops": $0 == "6755" ? white : ($0 == "6745" ? 200 - white : 0)]
-            }
+                ["paintCode": $0, "drops": $0 == whiteCode ? white : ($0 == blackCode ? 200 - white : 0)]
+            }.filter { isGolden || ($0["drops"] as? Int ?? 0) > 0 }
             let steps: [[String: Any]] = ingredients.compactMap { ingredient in
                 guard let drops = ingredient["drops"] as? Int, drops > 0 else { return nil }
                 return [

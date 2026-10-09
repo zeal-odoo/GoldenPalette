@@ -7,10 +7,10 @@ struct Golden__App: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(library: $library, configuration: configuration, generateBlend: { request, configuration in
-                try await Self.generateBlendedRecipe(request: request, configuration: configuration)
-            }) { target, configuration in
-                try await Self.generateRecipe(target: target, configuration: configuration)
+            ContentView(library: $library, configuration: configuration, generateBlend: { request, paintSet, configuration in
+                try await Self.generateBlendedRecipe(request: request, paintSet: paintSet, configuration: configuration)
+            }) { target, referencePaint, paintSet, configuration in
+                try await Self.generateRecipe(target: target, referencePaint: referencePaint, paintSet: paintSet, configuration: configuration)
             }
         }
 
@@ -34,6 +34,8 @@ struct Golden__App: App {
 
     private static func generateRecipe(
         target: MixingTarget,
+        referencePaint: PaintReference?,
+        paintSet: MixingPaintSet,
         configuration: AIConfiguration
     ) async throws -> MixingPalette {
         let configuration = try configuration.validated()
@@ -43,14 +45,15 @@ struct Golden__App: App {
            let fixture = process.environment["GOLDEN_UI_MIXING_RESPONSE"] {
             // UI automation injects a response; normal app launches always call Codex.
             try Task.checkCancellation()
-            return try MixingPalette.decode(Data(fixture.utf8), for: target, model: configuration.model)
+            return try MixingPalette.decode(Data(fixture.utf8), for: target, model: configuration.model, paintSet: paintSet, referencePaint: referencePaint)
         }
         #endif
-        return try await CodexMixingService().generate(for: target, configuration: configuration)
+        return try await CodexMixingService().generate(for: target, referencePaint: referencePaint, paintSet: paintSet, configuration: configuration)
     }
 
     private static func generateBlendedRecipe(
         request: ColorBlendRequest,
+        paintSet: MixingPaintSet,
         configuration: AIConfiguration
     ) async throws -> MixingPalette {
         let configuration = try configuration.validated()
@@ -61,10 +64,10 @@ struct Golden__App: App {
                 throw MixingError.invalidRecipe("界面验证未提供颜色合成响应。")
             }
             try Task.checkCancellation()
-            return try request.decodePalette(Data(fixture.utf8), model: configuration.model)
+            return try request.decodePalette(Data(fixture.utf8), model: configuration.model, paintSet: paintSet)
         }
         #endif
-        return try await CodexMixingService().generate(from: request, configuration: configuration)
+        return try await CodexMixingService().generate(from: request, paintSet: paintSet, configuration: configuration)
     }
 
     private static func initialConfiguration() -> AIConfiguration {

@@ -7,13 +7,17 @@ struct AIMixingView: View {
     @State private var redText: String
     @State private var greenText: String
     @State private var blueText: String
-    @State private var inputMode: MixingInputMode = .single
+    @State private var inputMode: MixingInputMode
+    @State private var paintSet: MixingPaintSet
     @State private var blendEntries: [ColorBlendEntry]
     @State private var result: MixingPalette?
     @State private var errorMessage: String?
     @State private var requestID: UUID?
     @State private var generationTask: Task<Void, Never>?
     @State private var activeModel: AIModelSelection?
+    @State private var referenceSeries: PaintSeries
+    @State private var selectedPaintCode: String?
+    @State private var paintSearchText = ""
 
     let projectName: String
     let configuration: AIConfiguration
@@ -25,14 +29,20 @@ struct AIMixingView: View {
     init(
         projectName: String,
         initialTarget: MixingTarget = .initial,
+        initialReferencePaint: PaintReference? = nil,
+        initialPaintSet: MixingPaintSet = .defaultSelection,
         configuration: AIConfiguration,
         canSave: Bool,
-        generateBlend: @escaping BlendMixingGenerator = { request, configuration in
-            try await CodexMixingService().generate(from: request, configuration: configuration)
+        generateBlend: @escaping BlendMixingGenerator = { request, paintSet, configuration in
+            try await CodexMixingService().generate(from: request, paintSet: paintSet, configuration: configuration)
         },
         generateRecipe: @escaping MixingGenerator,
         onSave: @escaping (MixingPalette) -> Bool
     ) {
+        _paintSet = State(initialValue: initialPaintSet.isSelectable ? initialPaintSet : .defaultSelection)
+        _referenceSeries = State(initialValue: initialReferencePaint?.series ?? .tamiyaAcrylic)
+        _selectedPaintCode = State(initialValue: initialReferencePaint?.paintCode)
+        _inputMode = State(initialValue: initialReferencePaint == nil ? .single : .reference)
         _redText = State(initialValue: String(initialTarget.red))
         _greenText = State(initialValue: String(initialTarget.green))
         _blueText = State(initialValue: String(initialTarget.blue))
@@ -48,14 +58,24 @@ struct AIMixingView: View {
         self.onSave = onSave
     }
 
+    private var selectedReference: PaintReference? {
+        guard let selectedPaintCode else { return nil }
+        return PaintReference(series: referenceSeries, paintCode: selectedPaintCode)
+    }
+
+    private var activeReference: PaintReference? {
+        inputMode == .reference ? selectedReference : nil
+    }
+
     private var target: MixingTarget? {
-        MixingTarget(redText: redText, greenText: greenText, blueText: blueText)
+        if inputMode == .reference { return selectedReference?.previewTarget }
+        return MixingTarget(redText: redText, greenText: greenText, blueText: blueText)
     }
 
     private var isGenerating: Bool { requestID != nil }
 
     private var blendRequest: ColorBlendRequest? { ColorBlendEntry.request(from: blendEntries) }
-    private var hasValidInput: Bool { inputMode == .single ? target != nil : blendRequest != nil }
+    private var hasValidInput: Bool { inputMode == .blend ? blendRequest != nil : target != nil }
 
     private var selectedColor: Binding<Color> {
         Binding(
@@ -82,7 +102,8 @@ struct AIMixingView: View {
                         .font(.title2.weight(.semibold))
                         .lineLimit(1)
                         .accessibilityIdentifier("mixingProjectTitle")
-                    Text("GOLDEN SoFlat · 指定 12 色 · 三份各 200 滴")
+                    Text("调色用漆：\(paintSet.title) · \(paintSet.paints.count) 色 · 三份各 200 滴")
+                        .accessibilityIdentifier("mixingPaintSummary")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -128,11 +149,28 @@ struct AIMixingView: View {
                             }
                             .padding(.vertical, 40)
                         } else {
-                            Text("可用颜料").font(.headline)
+                            Text("调色原料 · GOLDEN \(paintSet.paints.count) 色").font(.headline)
                             Text("AI 会生成本色、阴影色和高光色三份配方，逐色列出用量，每份各 200 滴。")
                                 .foregroundStyle(.secondary)
-                            ForEach(GoldenPaint.all) { paint in
-                                PaintDoseRow(paint: paint, drops: nil)
+                            Text("AI 只使用当前选择的这一套原料。品牌标准色用于确定目标，不会作为调色原料。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            LazyVStack(spacing: 12) {
+                                ForEach(paintSet.series) { series in
+                                    Text("\(series.title) · \(series.paints.count) 色")
+                                        .font(.subheadline.weight(.semibold))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.top, 8)
+                                    Text(series.previewNote)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .accessibilityIdentifier("paintPreviewNote-\(series.rawValue)")
+                                    ForEach(series.paints) { paint in
+                                        PaintDoseRow(paint: paint, drops: nil)
+                                            .accessibilityIdentifier("availablePaint-\(paint.code)")
+                                    }
+                                }
                             }
                         }
                     }
@@ -140,6 +178,7 @@ struct AIMixingView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .background(AppPalette.cardSurface)
+                .accessibilityIdentifier("mixingResultsScrollView")
             }
 
             Divider()
@@ -177,12 +216,34 @@ struct AIMixingView: View {
         .onChange(of: greenText) { _ in clearResult() }
         .onChange(of: blueText) { _ in clearResult() }
         .onChange(of: inputMode) { _ in clearResult() }
+        .onChange(of: paintSet) { _ in clearResult() }
         .onChange(of: blendEntries) { _ in clearResult() }
+        .onChange(of: referenceSeries) { _ in
+            selectedPaintCode = nil
+            paintSearchText = ""
+            clearResult()
+        }
+        .onChange(of: selectedPaintCode) { _ in clearResult() }
         .onDisappear(perform: cancelGeneration)
     }
 
     private var inputPanel: some View {
         VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("调色原料").font(.headline)
+                Picker("调色原料", selection: $paintSet) {
+                    ForEach(MixingPaintSet.selectable) { set in
+                        Text(set.selectionTitle).tag(set)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .accessibilityIdentifier("mixingPaintSetPicker")
+                Text("仅使用所选套装；切换后需重新生成配方。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Picker("输入方式", selection: $inputMode) {
                 ForEach(MixingInputMode.allCases) { mode in
                     Text(mode.title).tag(mode)
@@ -192,14 +253,86 @@ struct AIMixingView: View {
             .disabled(isGenerating)
             .accessibilityIdentifier("mixingInputMode")
 
-            if inputMode == .blend {
+            switch inputMode {
+            case .single:
+                singleColorInput
+            case .reference:
+                referenceColorInput
+                    .disabled(isGenerating)
+            case .blend:
                 ColorBlendEditor(entries: $blendEntries)
                     .disabled(isGenerating)
-            } else {
-                singleColorInput
             }
 
             generationControls
+        }
+    }
+
+    private var referenceColorInput: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("选择要用所选原料复现的标准色。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            PaintSeriesPicker(selection: $referenceSeries, identifierPrefix: "reference")
+
+            TextField("搜索标准色号或名称", text: $paintSearchText)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("referencePaintSearchField")
+
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                    ForEach(referenceSeries.matchingPaints(paintSearchText)) { paint in
+                        Button {
+                            selectedPaintCode = paint.code
+                        } label: {
+                            HStack {
+                                PaintDoseRow(paint: paint, drops: nil)
+                                if selectedPaintCode == paint.code {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(AppPalette.primary)
+                                }
+                            }
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selectedPaintCode == paint.code ? AppPalette.primaryContainer : Color.clear)
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("选择标准色 \(paint.code) \(paint.mixingName)")
+                        .accessibilityIdentifier("referencePaint-\(paint.code)")
+                    }
+                    if referenceSeries.matchingPaints(paintSearchText).isEmpty {
+                        Text("未找到该色号，可切换漆系或改用 RGB 输入。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .frame(height: 156)
+            .accessibilityIdentifier("referencePaintList")
+
+            if let reference = selectedReference, let target = reference.previewTarget {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(target.color)
+                    .frame(height: 48)
+                Text("本色参考：\(reference.summary)")
+                    .font(.caption.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("selectedReferencePaint")
+                Text("屏幕预览 · \(target.description) · \(target.hex)")
+                    .font(.caption.monospacedDigit())
+                    .accessibilityIdentifier("referencePreviewRGB")
+            } else {
+                Text("请从色库中选择一个标准色。")
+                    .font(.caption)
+                    .foregroundStyle(AppPalette.primary)
+            }
+            Text("\(selectedReference?.previewNote ?? referenceSeries.previewNote) AI 会结合品牌、色号和名称，用所选套装配色。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -292,6 +425,8 @@ struct AIMixingView: View {
     private func generate() {
         guard hasValidInput, !isGenerating, configuration.isValid, canSave else { return }
         let submittedTarget = target
+        let submittedReference = activeReference
+        let submittedPaintSet = paintSet
         let submittedBlend = inputMode == .blend ? blendRequest : nil
         result = nil
         errorMessage = nil
@@ -305,14 +440,19 @@ struct AIMixingView: View {
             do {
                 let recipe: MixingPalette
                 if let submittedBlend {
-                    recipe = try await generateBlend(submittedBlend, requestConfiguration)
+                    recipe = try await generateBlend(submittedBlend, submittedPaintSet, requestConfiguration)
                 } else if let submittedTarget {
-                    recipe = try await generateRecipe(submittedTarget, requestConfiguration)
+                    recipe = try await generateRecipe(submittedTarget, submittedReference, submittedPaintSet, requestConfiguration)
                 } else {
                     throw MixingError.invalidRecipe("请输入有效颜色。")
                 }
                 try Task.checkCancellation()
-                guard requestID == id else { return }
+                guard requestID == id, paintSet == submittedPaintSet else { return }
+                guard recipe.recipes.allSatisfy({
+                    $0.paintSet == submittedPaintSet && $0.referencePaint == submittedReference
+                }) else {
+                    throw MixingError.invalidRecipe("配方必须只使用当前所选套装，并保留所选参考标准，请重新生成。")
+                }
                 result = recipe
                 activeModel = recipe.base.model
             } catch is CancellationError {
@@ -403,10 +543,24 @@ struct MixingRecipeDetails: View {
                     Text("\(recipe.role.title) · \(recipe.response.name)")
                         .font(.title2.weight(.semibold))
                         .accessibilityIdentifier("mixingRoleTitle")
-                    Text("\(recipe.role == .base ? (recipe.synthesis == nil ? "输入本色" : "AI 合成本色") : "AI 建议目标") \(recipe.target.description) · \(recipe.target.hex)")
+                    Text("\(recipe.role == .base ? (recipe.referencePaint != nil ? "参考色预览" : (recipe.synthesis == nil ? "输入本色" : "AI 合成本色")) : "AI 建议目标") \(recipe.target.description) · \(recipe.target.hex)")
+                        .accessibilityIdentifier("mixingTargetRGB")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Text("调色用漆：\(recipe.paintsTitle)")
+                .font(.subheadline.weight(.medium))
+                .accessibilityIdentifier("savedMixingPaintSeries")
+
+            if let reference = recipe.referencePaint {
+                Text("本色参考标准：\(reference.summary)")
+                    .font(.subheadline)
+                    .accessibilityIdentifier("savedReferencePaint")
+                Text("\(reference.previewNote) 实际使用 \(recipe.paintsTitle) 调制。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             if let synthesis = recipe.synthesis {
@@ -422,17 +576,18 @@ struct MixingRecipeDetails: View {
             }
 
             VStack(spacing: 10) {
-                ForEach(GoldenPaint.all) { paint in
+                ForEach(recipe.displayedPaints) { paint in
                     PaintDoseRow(paint: paint, drops: recipe.drops(for: paint.code))
+                        .accessibilityIdentifier("recipePaint-\(paint.code)")
                 }
             }
 
             Divider()
             Text("具体怎么调").font(.headline)
             ForEach(Array(recipe.response.steps.enumerated()), id: \.offset) { index, step in
-                let paint = GoldenPaint.all.first { $0.code == step.paintCode }
+                let paint = recipe.paints.first { $0.code == step.paintCode }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(index + 1). 加入 \(paint?.chineseName ?? step.paintCode) #\(step.paintCode) · \(step.drops) 滴")
+                    Text("\(index + 1). 加入 \(paint?.series.title ?? "") · \(paint?.chineseName ?? step.paintCode) #\(step.paintCode) · \(step.drops) 滴")
                         .font(.subheadline.weight(.semibold))
                     Text(step.instruction)
                         .foregroundStyle(.secondary)
@@ -455,7 +610,7 @@ struct MixingRecipeDetails: View {
 }
 
 private struct PaintDoseRow: View {
-    let paint: GoldenPaint
+    let paint: CatalogPaint
     let drops: Int?
 
     var body: some View {
@@ -469,7 +624,7 @@ private struct PaintDoseRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(paint.chineseName) · #\(paint.code)")
                     .font(.subheadline.weight(.medium))
-                Text(paint.name).font(.caption2).foregroundStyle(.secondary)
+                Text("\(paint.series.title) · \(paint.name)").font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
             if let drops {
@@ -479,6 +634,8 @@ private struct PaintDoseRow: View {
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(paint.ingredientName)，色号 \(paint.code)，\(drops.map { "\($0) 滴" } ?? "可用调色原料")")
+        .help("\(paint.rgbDescription)\n\(paint.series.previewNote)")
     }
 }
 

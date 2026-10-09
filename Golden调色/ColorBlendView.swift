@@ -3,10 +3,25 @@ import AppKit
 
 enum MixingInputMode: String, CaseIterable, Identifiable {
     case single
+    case reference
     case blend
 
     var id: String { rawValue }
-    var title: String { self == .single ? "单个颜色" : "多色合成" }
+    var title: String {
+        switch self {
+        case .single: return "单个颜色"
+        case .reference: return "品牌标准色"
+        case .blend: return "多色合成"
+        }
+    }
+}
+
+enum ColorBlendInputMode: String, CaseIterable, Identifiable {
+    case rgb
+    case reference
+
+    var id: String { rawValue }
+    var title: String { self == .rgb ? "RGB" : "品牌标准色" }
 }
 
 struct ColorBlendEntry: Identifiable, Equatable {
@@ -15,6 +30,9 @@ struct ColorBlendEntry: Identifiable, Equatable {
     var greenText: String
     var blueText: String
     var percentageText: String
+    var inputMode: ColorBlendInputMode = .rgb
+    private(set) var referenceSeries: PaintSeries = .tamiyaAcrylic
+    var selectedPaintCode: String?
 
     init(target: MixingTarget, percentage: Double) {
         redText = String(target.red)
@@ -23,15 +41,28 @@ struct ColorBlendEntry: Identifiable, Equatable {
         percentageText = String(format: "%g", percentage)
     }
 
+    var referencePaint: PaintReference? {
+        guard inputMode == .reference, let selectedPaintCode else { return nil }
+        return PaintReference(series: referenceSeries, paintCode: selectedPaintCode)
+    }
+
     var target: MixingTarget? {
-        MixingTarget(redText: redText, greenText: greenText, blueText: blueText)
+        if inputMode == .reference { return referencePaint?.previewTarget }
+        return MixingTarget(redText: redText, greenText: greenText, blueText: blueText)
+    }
+
+    mutating func selectReferenceSeries(_ series: PaintSeries) {
+        guard referenceSeries != series else { return }
+        referenceSeries = series
+        // Shared codes (e.g. X-1) must not silently carry across different paint systems.
+        selectedPaintCode = nil
     }
 
     var source: ColorBlendSource? {
         guard let target,
               let percentage = Double(percentageText.trimmingCharacters(in: .whitespacesAndNewlines)),
               percentage.isFinite, percentage > 0, percentage <= 100 else { return nil }
-        return ColorBlendSource(target: target, percentage: percentage)
+        return ColorBlendSource(target: target, percentage: percentage, referencePaint: referencePaint)
     }
 
     static func request(from entries: [ColorBlendEntry]) -> ColorBlendRequest? {
@@ -46,7 +77,7 @@ struct ColorBlendEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("填写多个 RGB 和占比，由 AI 合成一个本色目标。")
+            Text("每组可输入 RGB 或选择品牌标准色，再填写占比，由 AI 合成一个本色目标。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -59,9 +90,14 @@ struct ColorBlendEditor: View {
             }
 
             Button {
-                entries.append(ColorBlendEntry(target: .initial, percentage: 25))
+                var entry = ColorBlendEntry(target: .initial, percentage: 25)
+                if let previous = entries.last {
+                    entry.inputMode = previous.inputMode
+                    entry.selectReferenceSeries(previous.referenceSeries)
+                }
+                entries.append(entry)
             } label: {
-                Label("添加一组 RGB", systemImage: "plus")
+                Label("添加一组颜色", systemImage: "plus")
             }
             .accessibilityIdentifier("addBlendSourceButton")
 
@@ -71,7 +107,7 @@ struct ColorBlendEditor: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             } else {
-                Text("至少两组有效颜色；RGB 为 0～255 整数，占比大于 0 且不超过 100%。")
+                Text("至少两组颜色；每组须输入 0～255 的整数 RGB 或选择品牌标准色，占比大于 0 且不超过 100%。")
                     .font(.caption)
                     .foregroundStyle(AppPalette.primary)
                     .accessibilityIdentifier("blendInputError")
@@ -104,8 +140,15 @@ private struct ColorBlendInputRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                ColorPicker("颜色 \(index + 1)", selection: selectedColor, supportsOpacity: false)
-                    .accessibilityIdentifier("blendColorPicker-\(index)")
+                if entry.inputMode == .rgb {
+                    ColorPicker("颜色 \(index + 1)", selection: selectedColor, supportsOpacity: false)
+                        .accessibilityIdentifier("blendColorPicker-\(index)")
+                } else {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(entry.target?.color ?? .gray)
+                        .frame(width: 20, height: 20)
+                    Text("颜色 \(index + 1)")
+                }
                 Spacer()
                 Button(role: .destructive, action: onRemove) {
                     Image(systemName: "trash")
@@ -117,10 +160,22 @@ private struct ColorBlendInputRow: View {
                 .accessibilityIdentifier("removeBlendSource-\(index)")
             }
 
-            HStack(spacing: 8) {
-                channel("R", text: $entry.redText)
-                channel("G", text: $entry.greenText)
-                channel("B", text: $entry.blueText)
+            Picker("输入方式", selection: $entry.inputMode) {
+                ForEach(ColorBlendInputMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("blendInputMode-\(index)")
+
+            if entry.inputMode == .reference {
+                ColorBlendReferenceInput(entry: $entry, index: index)
+            } else {
+                HStack(spacing: 8) {
+                    channel("R", text: $entry.redText)
+                    channel("G", text: $entry.greenText)
+                    channel("B", text: $entry.blueText)
+                }
             }
 
             HStack {
@@ -149,6 +204,74 @@ private struct ColorBlendInputRow: View {
     }
 }
 
+private struct ColorBlendReferenceInput: View {
+    @Binding var entry: ColorBlendEntry
+    let index: Int
+    @State private var searchText = ""
+
+    private var series: Binding<PaintSeries> {
+        Binding(
+            get: { entry.referenceSeries },
+            set: {
+                entry.selectReferenceSeries($0)
+                searchText = ""
+            }
+        )
+    }
+
+    private var matchingPaints: [CatalogPaint] {
+        entry.referenceSeries.matchingPaints(searchText)
+    }
+
+    private var displayedPaints: [CatalogPaint] {
+        let matches = matchingPaints
+        // Keep the selected tag available while filtering; searching alone doesn't change the input.
+        if let selected = entry.referencePaint?.paint, !matches.contains(selected) {
+            return [selected] + matches
+        }
+        return matches
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            PaintSeriesPicker(selection: series, identifierPrefix: "blend\(index)")
+
+            TextField("搜索色号或名称", text: $searchText)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("blendPaintSearchField-\(index)")
+
+            Picker("标准色", selection: $entry.selectedPaintCode) {
+                Text("请选择色号").tag(String?.none)
+                ForEach(displayedPaints) { paint in
+                    Text("\(paint.code) · \(paint.chineseName)").tag(Optional(paint.code))
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("blendPaintCodePicker-\(index)")
+
+            if matchingPaints.isEmpty {
+                Text("未找到匹配色号，请修改搜索条件。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let reference = entry.referencePaint, let target = reference.previewTarget {
+                Text("\(reference.summary)\n\(target.description) · \(target.hex)")
+                    .font(.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("blendSelectedReference-\(index)")
+                Text(reference.previewNote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("请选择这一组的品牌标准色。")
+                    .font(.caption)
+                    .foregroundStyle(AppPalette.primary)
+            }
+        }
+    }
+}
+
 struct ColorBlendSynthesisDetails: View {
     let synthesis: ColorBlendSynthesis
 
@@ -167,8 +290,17 @@ struct ColorBlendSynthesisDetails: View {
                 .font(.callout.monospacedDigit())
             }
             ForEach(Array(synthesis.sources.enumerated()), id: \.offset) { index, source in
-                Text("\(index + 1). \(source.target.description) · \(source.percentageText)%")
-                    .font(.caption.monospacedDigit())
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(index + 1). \(source.colorDescription) · \(source.percentageText)%")
+                        .font(.caption.monospacedDigit())
+                        .accessibilityIdentifier("blendSourceSummary-\(index)")
+                    if let reference = source.referencePaint {
+                        Text(reference.previewNote)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
             }
             Text("输入按相对比例换算为 100%。")
                 .font(.caption)

@@ -1,6 +1,6 @@
 import Foundation
 
-typealias MixingGenerator = @Sendable (MixingTarget, AIConfiguration) async throws -> MixingPalette
+typealias MixingGenerator = @Sendable (MixingTarget, PaintReference?, MixingPaintSet, AIConfiguration) async throws -> MixingPalette
 
 struct MixingTarget: Codable, Equatable, Sendable {
     let red: Int
@@ -32,6 +32,17 @@ struct MixingTarget: Codable, Equatable, Sendable {
             return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
         }
         return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+    }
+
+    /// CIE L* lightness of the preview, using sRGB's D65 white (Yn = 1).
+    /// This compares screen targets, not measured paint colors or Delta E.
+    /// https://www.w3.org/TR/css-color-4/#color-conversion-code
+    var perceptualLightness: Double {
+        let luminance = relativeLuminance
+        let lightness = luminance > 216.0 / 24_389.0
+            ? 116 * pow(luminance, 1.0 / 3.0) - 16
+            : (24_389.0 / 27.0) * luminance
+        return min(100, max(0, lightness))
     }
 
     var isBlack: Bool { red == 0 && green == 0 && blue == 0 }
@@ -83,6 +94,10 @@ struct MixingRecipe: Codable, Equatable, Sendable {
     let response: MixingResponse
     let role: MixingRole
     let model: AIModelSelection
+    // Keep the original series when reading recipes saved before reference-color mixing.
+    let paintSeries: PaintSeries
+    let paintSet: MixingPaintSet?
+    let referencePaint: PaintReference?
     let synthesis: ColorBlendSynthesis?
 
     init(
@@ -90,9 +105,19 @@ struct MixingRecipe: Codable, Equatable, Sendable {
         response: MixingResponse,
         role: MixingRole = .base,
         model: AIModelSelection = AIModelSelection(),
-        synthesis: ColorBlendSynthesis? = nil
+        paintSeries: PaintSeries = .goldenSoFlat,
+        paintSet: MixingPaintSet? = nil,
+        synthesis: ColorBlendSynthesis? = nil,
+        referencePaint: PaintReference? = nil
     ) throws {
-        let codes = Set(GoldenPaint.all.map(\.code))
+        // A missing paintSet represents an older single-series recipe, never an expanded palette.
+        guard paintSet == nil || paintSeries == paintSet?.primarySeries else {
+            throw MixingError.invalidRecipe("配方原料套装与漆系不一致。")
+        }
+        let paints = paintSet?.paints ?? paintSeries.paints
+        let codes = Set(paints.map(\.code))
+        let requiresAllPaints = paintSet != nil || paintSeries == .goldenSoFlat
+        let paintsTitle = paintSet?.title ?? paintSeries.title
         guard [target.red, target.green, target.blue].allSatisfy({ (0...255).contains($0) }) else {
             throw MixingError.invalidRecipe("目标 RGB 超出 0～255。")
         }
@@ -101,10 +126,18 @@ struct MixingRecipe: Codable, Equatable, Sendable {
               !response.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw MixingError.invalidRecipe("缺少配方名称或试调说明。")
         }
-        guard response.ingredients.count == codes.count,
-              Set(response.ingredients.map(\.paintCode)) == codes,
-              response.ingredients.allSatisfy({ (0...Self.totalDrops).contains($0.drops) }) else {
-            throw MixingError.invalidRecipe("配方必须列出指定的 12 种颜料，且每种仅出现一次，滴数为非负整数。")
+        let suppliedCodes = Set(response.ingredients.map(\.paintCode))
+        let minimumDrops = requiresAllPaints ? 0 : 1
+        guard !response.ingredients.isEmpty,
+              response.ingredients.count <= min(codes.count, 36),
+              suppliedCodes.count == response.ingredients.count,
+              suppliedCodes.isSubset(of: codes),
+              response.ingredients.allSatisfy({ (minimumDrops...Self.totalDrops).contains($0.drops) }),
+              !requiresAllPaints || suppliedCodes == codes else {
+            throw MixingError.invalidRecipe(
+                "配方只能使用 \(paintsTitle) 色库中的颜料，色号不能重复，滴数必须有效。"
+                    + (requiresAllPaints ? "本配方须列全 \(paints.count) 色，未用填 0。" : "")
+            )
         }
         guard response.ingredients.reduce(0, { $0 + $1.drops }) == Self.totalDrops else {
             throw MixingError.invalidRecipe("各色滴数之和不是 200，已拒绝这份结果，请重新生成。")
@@ -131,12 +164,22 @@ struct MixingRecipe: Codable, Equatable, Sendable {
         guard role != .base || synthesis == nil || synthesis?.target == target else {
             throw MixingError.invalidRecipe("合成目标色与配方本色不一致。")
         }
+        if let referencePaint {
+            try referencePaint.validate()
+            guard (paintSet != nil || paintSeries == .goldenSoFlat), synthesis == nil else {
+                throw MixingError.invalidRecipe("品牌参考色配方必须使用指定的 GOLDEN 调色原料。")
+            }
+            if role == .base { try referencePaint.validate(target: target) }
+        }
+        self.referencePaint = referencePaint
         self.model = model
+        self.paintSeries = paintSeries
+        self.paintSet = paintSet
         self.synthesis = synthesis
     }
 
     private enum CodingKeys: String, CodingKey {
-        case target, response, role, model, synthesis
+        case target, response, role, model, paintSeries, paintSet, synthesis, referencePaint
     }
 
     init(from decoder: Decoder) throws {
@@ -146,11 +189,18 @@ struct MixingRecipe: Codable, Equatable, Sendable {
             response: values.decode(MixingResponse.self, forKey: .response),
             role: values.decodeIfPresent(MixingRole.self, forKey: .role) ?? .base,
             model: values.decodeIfPresent(AIModelSelection.self, forKey: .model) ?? AIModelSelection(),
-            synthesis: values.decodeIfPresent(ColorBlendSynthesis.self, forKey: .synthesis)
+            paintSeries: values.decodeIfPresent(PaintSeries.self, forKey: .paintSeries) ?? .goldenSoFlat,
+            paintSet: values.decodeIfPresent(MixingPaintSet.self, forKey: .paintSet),
+            synthesis: values.decodeIfPresent(ColorBlendSynthesis.self, forKey: .synthesis),
+            referencePaint: values.decodeIfPresent(PaintReference.self, forKey: .referencePaint)
         )
     }
 
-    static func decode(_ data: Data, for target: MixingTarget) throws -> MixingRecipe {
+    static func decode(
+        _ data: Data, for target: MixingTarget, referencePaint: PaintReference? = nil,
+        paintSet: MixingPaintSet = .defaultSelection
+    ) throws -> MixingRecipe {
+        try paintSet.validateForGeneration()
         guard data.count <= 128_000 else {
             throw MixingError.invalidRecipe("AI 返回内容过长，请重新生成。")
         }
@@ -160,25 +210,42 @@ struct MixingRecipe: Codable, Equatable, Sendable {
         } catch {
             throw MixingError.invalidRecipe("AI 未返回有效的整数滴数配方，请重新生成。")
         }
-        return try MixingRecipe(target: target, response: response)
+        return try MixingRecipe(
+            target: target, response: response, paintSeries: paintSet.primarySeries,
+            paintSet: paintSet, referencePaint: referencePaint
+        )
     }
 
     func drops(for code: String) -> Int {
         response.ingredients.first { $0.paintCode == code }?.drops ?? 0
     }
 
+    var paints: [CatalogPaint] { paintSet?.paints ?? paintSeries.paints }
+    var paintsTitle: String { paintSet?.title ?? paintSeries.title }
+
+    /// Reopening AI mixing restores a single kit without modifying any saved recipe.
+    var paintSetForNewMixing: MixingPaintSet {
+        if let paintSet, paintSet.isSelectable { return paintSet }
+        return paintSet == nil && paintSeries == .goldenFluid ? .fluid13 : .defaultSelection
+    }
+
+    var displayedPaints: [CatalogPaint] {
+        paints.filter { paintSet != nil || paintSeries == .goldenSoFlat || drops(for: $0.code) > 0 }
+    }
+
     var formattedText: String {
-        let doses = GoldenPaint.all.map {
-            "\($0.mixingName) #\($0.code)：\(drops(for: $0.code)) 滴"
+        let doses = displayedPaints.map {
+            "\($0.ingredientName) #\($0.code)：\(drops(for: $0.code)) 滴"
         }.joined(separator: "\n")
         let steps = response.steps.enumerated().map { index, step in
-            let paint = GoldenPaint.all.first { $0.code == step.paintCode }
-            return "\(index + 1). 加入 \(paint?.mixingName ?? step.paintCode) \(step.drops) 滴。\n\(step.instruction)"
+            let paint = paints.first { $0.code == step.paintCode }
+            return "\(index + 1). 加入 \(paint?.ingredientName ?? step.paintCode) #\(step.paintCode) \(step.drops) 滴。\n\(step.instruction)"
         }.joined(separator: "\n\n")
         return """
         \(role.title) · \(response.name)
         目标：\(target.description) · \(target.hex)
-        GOLDEN SoFlat · 总量 200 滴
+        调色用漆：\(paintsTitle) · 总量 200 滴
+        \(referencePaint.map { "本色参考标准：" + $0.summary + "\n" + $0.previewNote } ?? "")
         \(model.summary)
 
         \(doses)
@@ -194,8 +261,9 @@ struct MixingRecipe: Codable, Equatable, Sendable {
         """
     }
 
-    static var responseSchema: [String: Any] {
-        let code: [String: Any] = ["type": "string", "enum": GoldenPaint.all.map(\.code)]
+    static func responseSchema(paintSet: MixingPaintSet) -> [String: Any] {
+        let paints = paintSet.paints
+        let code: [String: Any] = ["type": "string", "enum": paints.map(\.code)]
         let dose: [String: Any] = [
             "type": "object",
             "additionalProperties": false,
@@ -222,7 +290,7 @@ struct MixingRecipe: Codable, Equatable, Sendable {
                 "name": ["type": "string"],
                 "ingredients": [
                     "type": "array", "items": dose,
-                    "minItems": GoldenPaint.all.count, "maxItems": GoldenPaint.all.count
+                    "minItems": paints.count, "maxItems": paints.count
                 ],
                 "steps": ["type": "array", "items": step, "minItems": 1, "maxItems": 36],
                 "notes": ["type": "string"]

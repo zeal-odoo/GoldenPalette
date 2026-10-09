@@ -26,10 +26,15 @@ struct ColorInfo: Codable, Identifiable, Equatable {
         color.red = Self.clampedRGB(red)
         color.green = Self.clampedRGB(green)
         color.blue = Self.clampedRGB(blue)
-        if let recipe = color.mixingRecipe,
-           (Double(recipe.target.red) != color.red || Double(recipe.target.green) != color.green
-            || Double(recipe.target.blue) != color.blue) {
-            color.mixingRecipe = nil
+        if let recipe = color.mixingRecipe {
+            let changedRGB = Double(recipe.target.red) != color.red
+                || Double(recipe.target.green) != color.green || Double(recipe.target.blue) != color.blue
+            // Different reference series can share a code and the same approximate RGB.
+            let changedReference = recipe.referencePaint.map { reference in
+                guard let paintCode = color.paintCode else { return false }
+                return paintCode != reference.paintCode || PaintSeries.forColor(color) != reference.series
+            } ?? false
+            if changedRGB || changedReference { color.mixingRecipe = nil }
         }
         return color
     }

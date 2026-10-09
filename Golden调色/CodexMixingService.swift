@@ -61,28 +61,34 @@ struct CodexMixingService: Sendable {
 
     func generate(
         for target: MixingTarget,
+        referencePaint: PaintReference? = nil,
+        paintSet: MixingPaintSet = .defaultSelection,
         configuration: AIConfiguration = AIConfiguration()
     ) async throws -> MixingPalette {
         let configuration = try configuration.validated()
+        try paintSet.validateForGeneration()
+        try referencePaint?.validate(target: target)
         let data = try await request(
-            prompt: MixingPalette.prompt(for: target),
-            schema: MixingPalette.outputSchema(),
+            prompt: MixingPalette.prompt(for: target, referencePaint: referencePaint, paintSet: paintSet),
+            schema: MixingPalette.outputSchema(paintSet: paintSet),
             configuration: configuration
         )
-        return try MixingPalette.decode(data, for: target, model: configuration.model)
+        return try MixingPalette.decode(data, for: target, model: configuration.model, paintSet: paintSet, referencePaint: referencePaint)
     }
 
     func generate(
         from blend: ColorBlendRequest,
+        paintSet: MixingPaintSet = .defaultSelection,
         configuration: AIConfiguration = AIConfiguration()
     ) async throws -> MixingPalette {
         let configuration = try configuration.validated()
+        try paintSet.validateForGeneration()
         let data = try await request(
-            prompt: blend.prompt,
-            schema: ColorBlendRequest.outputSchema(),
+            prompt: blend.prompt(paintSet: paintSet),
+            schema: ColorBlendRequest.outputSchema(paintSet: paintSet),
             configuration: configuration
         )
-        return try blend.decodePalette(data, model: configuration.model)
+        return try blend.decodePalette(data, model: configuration.model, paintSet: paintSet)
     }
 
     private func request(prompt: String, schema: Data, configuration: AIConfiguration) async throws -> Data {

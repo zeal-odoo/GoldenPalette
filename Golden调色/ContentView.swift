@@ -401,6 +401,7 @@ struct ColorEditorWindowContent: View {
     @State private var colorName: String
     @State private var paintSearchText: String
     @State private var selectedPaintCode: String?
+    @State private var paintSeries: PaintSeries
 
     init(
         mode: ColorPickerMode,
@@ -417,12 +418,14 @@ struct ColorEditorWindowContent: View {
         _blue = State(initialValue: ColorInfo.clampedRGB(initialColor.blue))
         _colorName = State(initialValue: initialColor.name)
         _selectedPaintCode = State(initialValue: initialColor.paintCode)
+        let series = PaintSeries.forColor(initialColor)
+        _paintSeries = State(initialValue: series)
 
         switch mode {
         case .add:
             _paintSearchText = State(initialValue: "")
         case .edit:
-            _paintSearchText = State(initialValue: GoldenPaint.all.first {
+            _paintSearchText = State(initialValue: series.paints.first {
                 $0.code == initialColor.paintCode
             }?.name ?? "")
         }
@@ -438,24 +441,18 @@ struct ColorEditorWindowContent: View {
         return formatter
     }()
 
-    private var filteredGoldenPaints: [GoldenPaint] {
-        let trimmedSearch = paintSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSearch.isEmpty else { return GoldenPaint.all }
-
-        return GoldenPaint.all.filter {
-            $0.name.localizedCaseInsensitiveContains(trimmedSearch)
-            || $0.code.localizedCaseInsensitiveContains(trimmedSearch)
-        }
+    private var filteredPaints: [CatalogPaint] {
+        paintSeries.matchingPaints(paintSearchText)
     }
 
-    private var selectedPaint: GoldenPaint? {
+    private var selectedPaint: CatalogPaint? {
         guard let selectedPaintCode else { return nil }
-        return GoldenPaint.all.first { $0.code == selectedPaintCode }
+        return paintSeries.paints.first { $0.code == selectedPaintCode }
     }
 
     private var editorPaintTitle: String {
         if let code = selectedPaint?.code {
-            return "GOLDEN \(code)"
+            return "\(paintSeries.brand.title) \(code)"
         }
 
         return "自定义颜色"
@@ -535,14 +532,18 @@ struct ColorEditorWindowContent: View {
         .padding(18)
         .frame(width: Self.contentSize.width, height: Self.contentSize.height, alignment: .top)
         .background(FrostedWindowBackground())
+        .onChange(of: paintSeries) { _ in
+            selectedPaintCode = nil
+            paintSearchText = ""
+        }
     }
 
     private var paintLibrarySection: some View {
-        let paints = filteredGoldenPaints
+        let paints = filteredPaints
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("GOLDEN SoFlat", systemImage: "paintbrush.pointed")
+                Label("参考色库", systemImage: "paintbrush.pointed")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AppPalette.onSurface)
 
@@ -552,6 +553,8 @@ struct ColorEditorWindowContent: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(AppPalette.onSurfaceVariant)
             }
+
+            PaintSeriesPicker(selection: $paintSeries, identifierPrefix: "editor")
 
             TextField("搜索颜色名称或编号", text: $paintSearchText)
                 .textFieldStyle(.roundedBorder)
@@ -569,12 +572,12 @@ struct ColorEditorWindowContent: View {
                 }
                 .padding(2)
             }
-            .frame(height: 380)
+            .frame(height: 320)
         }
         .padding(14)
     }
 
-    private func paintLibraryRow(_ paint: GoldenPaint) -> some View {
+    private func paintLibraryRow(_ paint: CatalogPaint) -> some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color(red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255))
@@ -589,7 +592,7 @@ struct ColorEditorWindowContent: View {
                     .font(.caption)
                     .foregroundStyle(AppPalette.onSurface)
                     .lineLimit(1)
-                Text("#\(paint.code) · \(paint.series)")
+                Text("#\(paint.code) · \(paint.series.shortTitle)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(AppPalette.onSurfaceVariant)
             }
@@ -633,7 +636,11 @@ struct ColorEditorWindowContent: View {
         if let paint = selectedPaint {
             color.paintName = paint.name
             color.paintCode = paint.code
-            color.paintSeries = paint.series
+            color.paintSeries = paint.series.title
+        } else {
+            color.paintName = nil
+            color.paintCode = nil
+            color.paintSeries = nil
         }
         if case .add = mode {
             color.id = UUID()
@@ -642,7 +649,7 @@ struct ColorEditorWindowContent: View {
         onSave(color)
     }
 
-    private func selectPaint(_ paint: GoldenPaint) {
+    private func selectPaint(_ paint: CatalogPaint) {
         selectedPaintCode = paint.code
         paintSearchText = paint.name
         colorName = paint.name
@@ -780,6 +787,8 @@ private struct ProjectMixingRequest: Identifiable {
     let projectID: UUID
     let projectName: String
     let target: MixingTarget
+    let referencePaint: PaintReference?
+    let paintSet: MixingPaintSet
 
     var id: UUID { projectID }
 }
@@ -803,11 +812,11 @@ struct ContentView: View {
     init(
         library: Binding<RecipeLibrary>,
         configuration: AIConfiguration = AIConfiguration(),
-        generateBlend: @escaping BlendMixingGenerator = { request, configuration in
-            try await CodexMixingService().generate(from: request, configuration: configuration)
+        generateBlend: @escaping BlendMixingGenerator = { request, paintSet, configuration in
+            try await CodexMixingService().generate(from: request, paintSet: paintSet, configuration: configuration)
         },
-        generateRecipe: @escaping MixingGenerator = { target, configuration in
-            try await CodexMixingService().generate(for: target, configuration: configuration)
+        generateRecipe: @escaping MixingGenerator = { target, referencePaint, paintSet, configuration in
+            try await CodexMixingService().generate(for: target, referencePaint: referencePaint, paintSet: paintSet, configuration: configuration)
         }
     ) {
         _library = library
@@ -831,6 +840,8 @@ struct ContentView: View {
                 AIMixingView(
                     projectName: library.item(id: request.projectID)?.text ?? request.projectName,
                     initialTarget: request.target,
+                    initialReferencePaint: request.referencePaint,
+                    initialPaintSet: request.paintSet,
                     configuration: configuration,
                     canSave: !library.isReadOnly && library.item(id: request.projectID) != nil,
                     generateBlend: blendGenerator,
@@ -937,7 +948,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("调色谱")
                         .font(.system(size: 30, weight: .regular, design: .serif))
-                    Text("GOLDEN SoFlat")
+                    Text("调色原料 · GOLDEN")
                         .font(.caption)
                         .foregroundStyle(AppPalette.onSurfaceVariant)
                 }
@@ -975,7 +986,7 @@ struct ContentView: View {
 
             HStack(spacing: 6) {
                 Image(systemName: "paintbrush.pointed")
-                Text("GOLDEN · \(GoldenPaint.all.count) 色")
+                Text("参考色库 · 田宫 · 郡士")
             }
             .font(.caption)
             .foregroundStyle(AppPalette.onSurfaceVariant)
@@ -1238,11 +1249,18 @@ struct ContentView: View {
                                 .lineLimit(1)
                         }
 
-                        HStack {
-                            Text(color.paintCode.map { "GOLDEN \($0)" } ?? "自定义颜色")
-                            Spacer(minLength: 4)
-                            if let series = color.paintSeries {
-                                Text("系列 \(series)")
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let reference = color.mixingRecipe?.referencePaint {
+                                Text("本色参考：\(reference.series.brand.title) #\(reference.paintCode)")
+                            } else if let code = color.paintCode {
+                                Text("参考色：\(PaintSeries.forColor(color).brand.title) #\(code)")
+                            } else {
+                                Text("自定义颜色")
+                            }
+                            if let recipe = color.mixingRecipe {
+                                Text("调色用漆：\(recipe.paintsTitle)")
+                            } else if let series = color.paintSeries {
+                                Text("参考漆系：\(series)")
                             }
                         }
                         .font(.caption)
@@ -1270,7 +1288,7 @@ struct ContentView: View {
 
             HStack {
                 Button {
-                    showAIMixing(target: MixingTarget(red: color.red, green: color.green, blue: color.blue))
+                    showAIMixing(color: color)
                 } label: {
                     Label("用此颜色 AI 调色", systemImage: "sparkles")
                 }
@@ -1436,11 +1454,24 @@ struct ContentView: View {
         }
     }
 
-    private func showAIMixing(target: MixingTarget = .initial) {
+    private func showAIMixing(color: ColorInfo? = nil) {
         guard !library.isReadOnly, let selectedItemID,
               let project = library.item(id: selectedItemID) else { return }
         closeEditors()
-        mixingRequest = ProjectMixingRequest(projectID: project.id, projectName: project.text, target: target)
+        let reference: PaintReference?
+        let target: MixingTarget
+        if let color {
+            reference = PaintReference.forColor(color)
+            target = MixingTarget(red: color.red, green: color.green, blue: color.blue)
+        } else {
+            reference = project.colors.compactMap(\.mixingRecipe).last?.referencePaint
+            target = reference?.previewTarget ?? .initial
+        }
+        let previousRecipe = color?.mixingRecipe ?? project.colors.compactMap(\.mixingRecipe).last
+        mixingRequest = ProjectMixingRequest(
+            projectID: project.id, projectName: project.text, target: target, referencePaint: reference,
+            paintSet: previousRecipe?.paintSetForNewMixing ?? .defaultSelection
+        )
     }
 
     private func showSavedMixingRecipe(_ recipe: MixingRecipe, itemID: UUID, colorID: UUID) {
