@@ -306,7 +306,7 @@ enum MixingError: LocalizedError {
     case cliNotFound
     case launchFailed(String)
     case cliFailed(String)
-    case timedOut
+    case timedOut(after: TimeInterval)
     case invalidRecipe(String)
 
     var errorDescription: String? {
@@ -319,8 +319,8 @@ enum MixingError: LocalizedError {
             return "无法启动 Codex CLI：\(reason)"
         case .cliFailed(let reason):
             return reason
-        case .timedOut:
-            return "Codex 调色超过 4 分钟，已停止本次请求。请检查网络后重试。"
+        case .timedOut(let timeout):
+            return "Codex 调色超过 \(max(1, Int(ceil(timeout / 60)))) 分钟，已停止本次请求。高推理强度可能需要更长时间；可选择 high 或模型默认后重试，也请检查网络和账户状态。"
         case .invalidRecipe(let reason):
             return reason
         }

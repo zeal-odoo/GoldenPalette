@@ -119,6 +119,21 @@ struct AIMixingView: View {
 
             Divider()
 
+            if let errorMessage {
+                // Keep failures visible even when the ingredients or recipe were scrolled down.
+                ScrollView {
+                    Text(errorMessage)
+                        .foregroundStyle(AppPalette.primary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("mixingError")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                }
+                .frame(height: 84)
+                Divider()
+            }
+
             HStack(alignment: .top, spacing: 0) {
                 ScrollView {
                     inputPanel
@@ -129,12 +144,6 @@ struct AIMixingView: View {
                 Divider()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .foregroundStyle(AppPalette.primary)
-                                .textSelection(.enabled)
-                                .accessibilityIdentifier("mixingError")
-                        }
                         if let result {
                             MixingPaletteDetails(palette: result)
                         } else if isGenerating {
@@ -142,7 +151,8 @@ struct AIMixingView: View {
                                 ProgressView()
                                 Text(inputMode == .blend ? "AI 正在合成目标色并计算三色配方…" : "正在计算本色、阴影色和高光色…")
                                     .font(.headline)
-                                Text("正在分析颜料比例与混合顺序，可能需要数分钟，可随时取消。")
+                                Text((activeModel ?? configuration.model).reasoningEffort.generationWaitDescription)
+                                    .accessibilityIdentifier("mixingWaitDescription")
                                     .foregroundStyle(.secondary)
                                 Button("取消生成", action: cancelGeneration)
                                     .accessibilityIdentifier("cancelMixingButton")
@@ -179,6 +189,8 @@ struct AIMixingView: View {
                 }
                 .background(AppPalette.cardSurface)
                 .accessibilityIdentifier("mixingResultsScrollView")
+                // New requests and their results start at the top, so progress is always visible.
+                .id(requestID)
             }
 
             Divider()

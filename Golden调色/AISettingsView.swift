@@ -33,7 +33,7 @@ struct AISettingsView: View {
                     }
                 }
                 .accessibilityIdentifier("aiReasoningPicker")
-                Text("支持的强度取决于模型；不确定时可选“模型默认”。")
+                Text("支持的强度取决于模型；不确定时可选“模型默认”。\n\(configuration.model.reasoningEffort.generationWaitDescription)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

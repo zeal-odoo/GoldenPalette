@@ -127,7 +127,8 @@ struct CodexMixingService: Sendable {
             directory: directory,
             input: input,
             log: log,
-            logURL: logURL
+            logURL: logURL,
+            timeout: configuration.model.reasoningEffort.generationTimeout
         )
         try Task.checkCancellation()
         guard status == 0 else {
@@ -197,7 +198,7 @@ actor CodexProcessRunner {
         do {
             while process.isRunning {
                 try Task.checkCancellation()
-                guard Date() < deadline else { throw MixingError.timedOut }
+                guard Date() < deadline else { throw MixingError.timedOut(after: timeout) }
                 let size = (try? FileManager.default.attributesOfItem(atPath: logURL.path)[.size] as? NSNumber)?.intValue ?? 0
                 guard size < 2_000_000 else {
                     throw MixingError.cliFailed("Codex 输出异常过多，已停止请求，请检查 CLI 配置。")

@@ -13,6 +13,19 @@ enum AIReasoningEffort: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    // Higher efforts can spend several minutes reasoning before producing any output.
+    var generationTimeout: TimeInterval {
+        switch self {
+        case .max, .ultra: return 20 * 60
+        case .xhigh: return 10 * 60
+        default: return 4 * 60
+        }
+    }
+
+    var generationWaitDescription: String {
+        "当前推理强度最多等待 \(Int(generationTimeout / 60)) 分钟，可随时取消。"
+    }
+
     var title: String {
         switch self {
         case .modelDefault: return "模型默认"

@@ -5,6 +5,25 @@ import Darwin
 
 struct MixingTests {
     @Test
+    func testMaxReasoningHasTimeToFinishWithoutChangingItsEffort() throws {
+        for effort in [AIReasoningEffort.max, .ultra] {
+            let configuration = try AIConfiguration(model: AIModelSelection(reasoningEffort: effort)).validated()
+            #expect(configuration.model.reasoningEffort == effort)
+            #expect(configuration.model.reasoningEffort.generationTimeout == 1_200)
+            #expect(configuration.model.reasoningEffort.generationWaitDescription.contains("20 分钟"))
+        }
+        #expect(AIReasoningEffort.xhigh.generationTimeout == 600)
+        #expect(AIReasoningEffort.high.generationTimeout == 240)
+    }
+
+    @Test
+    func testTimeoutMessageReportsTheActualWaitingLimit() {
+        let error = MixingError.timedOut(after: AIReasoningEffort.max.generationTimeout)
+        #expect(error.localizedDescription.contains("20 分钟"))
+        #expect(!error.localizedDescription.contains("4 分钟"))
+    }
+
+    @Test
     func testOriginalSoFlatPaletteRetainsTheTwelveRequestedPaints() {
         #expect(GoldenPaint.all.map(\.code) == [
             "6755", "6745", "6660", "6610", "6505", "6550",
@@ -215,7 +234,8 @@ struct MixingTests {
                     directory: directory, input: input, log: log, logURL: logURL, timeout: 0.3
                 )
                 Issue.record("Expected a timeout.")
-            } catch MixingError.timedOut {
+            } catch MixingError.timedOut(let timeout) {
+                #expect(timeout == 0.3)
                 try expectProcessExited(logURL: logURL)
             }
         }

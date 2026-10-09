@@ -113,14 +113,46 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeAIMixingButton"].click()
     }
 
-    func testGeneratedRecipeCanBeSavedAndViewed() throws {
+    func testMaxFailureStaysVisibleAfterScrollingIngredients() {
+        let app = launchApp(mixingResponse: "{}")
+        app.buttons["aiSettingsButton"].firstMatch.click()
+        let model = app.textFields["aiModelField"]
+        XCTAssertTrue(model.waitForExistence(timeout: 5))
+        chooseMenuOption("最高 · max", picker: "aiReasoningPicker", in: app)
+        app.typeKey("w", modifierFlags: [.command])
+        waitUntilGone(model)
+
+        createRecipe("Max failure project", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        let results = app.scrollViews["mixingResultsScrollView"]
+        XCTAssertTrue(results.waitForExistence(timeout: 5))
+        results.scroll(byDeltaX: 0, deltaY: -1_200)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+
+        let error = app.staticTexts["mixingError"]
+        XCTAssertTrue(error.waitForExistence(timeout: 10))
+        // Static text need not be hittable; verify its actual position within the sheet.
+        let sheet = app.sheets.firstMatch
+        XCTAssertGreaterThan(error.frame.height, 0)
+        XCTAssertTrue(sheet.frame.contains(error.frame))
+        XCTAssertLessThanOrEqual(error.frame.maxY, results.frame.minY)
+        results.scroll(byDeltaX: 0, deltaY: -1_200)
+        XCTAssertTrue(sheet.frame.contains(error.frame))
+        XCTAssertLessThanOrEqual(error.frame.maxY, results.frame.minY)
+        XCTAssertTrue(generate.isEnabled)
+        XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
+    }
+
+    func testMaxEffortRecipeCanBeSavedAndViewed() throws {
         // The process layer has separate integration coverage; UI runs use no account quota or saved defaults.
         let app = launchApp(mixingResponse: try threeToneFixture())
         app.buttons["aiSettingsButton"].firstMatch.click()
         let model = app.textFields["aiModelField"]
         XCTAssertTrue(model.waitForExistence(timeout: 5))
         replaceText(in: model, with: "ui-custom-model")
-        chooseMenuOption("低 · low", picker: "aiReasoningPicker", in: app)
+        chooseMenuOption("最高 · max", picker: "aiReasoningPicker", in: app)
         app.typeKey("w", modifierFlags: [.command])
         waitUntilGone(model)
 
@@ -136,7 +168,7 @@ final class Golden__UITests: XCTestCase {
         app.buttons["aiMixingButton"].firstMatch.click()
         XCTAssertTrue(app.buttons["generateMixingButton"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["mixingProjectTitle"].value as? String, "AI 调色 · My painting project")
-        XCTAssertEqual(app.staticTexts["mixingModelSummary"].value as? String, "ui-custom-model · low")
+        XCTAssertEqual(app.staticTexts["mixingModelSummary"].value as? String, "ui-custom-model · max")
         app.buttons["generateMixingButton"].click()
         XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
 
@@ -189,7 +221,7 @@ final class Golden__UITests: XCTestCase {
             XCTAssertTrue(recipeWindow.buttons["copySavedMixingRecipeButton"].exists)
             XCTAssertEqual(
                 recipeWindow.descendants(matching: .any)["savedMixingModelSummary"].firstMatch.value as? String,
-                "ui-custom-model · low"
+                "ui-custom-model · max"
             )
             recipeWindow.buttons["closeSavedMixingRecipeButton"].click()
             waitUntilGone(recipeWindow)
