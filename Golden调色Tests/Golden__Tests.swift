@@ -1,8 +1,12 @@
+// 项目颜色库回归测试：覆盖旧数据兼容、持久化、稳定身份与多窗口编辑冲突。
+// 每项持久化测试使用独立 UserDefaults 域，结束后清理，不改动真实用户项目。
 import Foundation
 import Testing
 @testable import Golden调色
 
+/// 验证 RecipeLibrary 对数据完整性和编辑归属的保证。
 struct Golden__Tests {
+    /// 早期颜色缺少新增字段时仍能恢复，并使用兼容默认值。
     @Test
     func testLegacyColorsDecodeWithoutNewFields() throws {
         let json = #"""
@@ -20,6 +24,7 @@ struct Golden__Tests {
         #expect(color.red == 128)
     }
 
+    /// 旧项目没有 colors 字段时按空颜色列表读取。
     @Test
     func testLegacyRecipeWithoutColorsDecodesAsEmpty() throws {
         let data = Data(#"{"text":"空配方"}"#.utf8)
@@ -28,6 +33,7 @@ struct Golden__Tests {
         #expect(item.colors.isEmpty)
     }
 
+    /// 编码与解码应保留颜色身份、商品信息和方法说明。
     @Test
     func testColorEncodingPreservesAllFields() throws {
         let color = ColorInfo(
@@ -41,6 +47,7 @@ struct Golden__Tests {
         #expect(decoded == original)
     }
 
+    /// 存档中的越界通道值应安全规范化到可显示范围。
     @Test
     func testExtremeRGBValuesDecodeSafely() throws {
         let data = Data(#"{"red":1e100,"green":-20,"blue":300}"#.utf8)
@@ -50,6 +57,7 @@ struct Golden__Tests {
         #expect(Int(color.blue) == 255)
     }
 
+    /// 无法解析的数据触发只读保护，后续编辑不得覆盖原始字节。
     @Test
     func testMalformedSavedDataIsNotOverwritten() throws {
         try withTemporaryDefaults { defaults in
@@ -65,6 +73,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 偏好键下意外出现非 Data 值时也应保护原存档。
     @Test
     func testUnexpectedStoredValueIsNotOverwritten() throws {
         try withTemporaryDefaults { defaults in
@@ -78,6 +87,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 只读取兼容数据不应立即重写偏好，保留用户原始存档格式。
     @Test
     func testLoadingLegacyDataDoesNotRewriteStorage() throws {
         try withTemporaryDefaults { defaults in
@@ -96,6 +106,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 项目与颜色的修改必须经重新加载后仍保持一致。
     @Test
     func testRecipeAndColorEditsSurviveReload() throws {
         try withTemporaryDefaults { defaults in
@@ -124,6 +135,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 旧颜色草稿提交时应保留其他窗口最新的方法说明和稳定 UUID。
     @Test
     func testColorEditorPreservesLatestMethodAndIdentity() throws {
         let originalColor = ColorInfo(red: 10, green: 20, blue: 30, method: "原方法")
@@ -148,6 +160,7 @@ struct Golden__Tests {
         #expect(saved.paintName == "Titan Buff")
     }
 
+    /// 前面项目被删除后，编辑仍按 UUID 命中原目标，不能依赖旧下标。
     @Test
     func testEditingUsesIDsAfterEarlierRecipeIsRemoved() throws {
         let first = ListItem(text: "第一个")
@@ -173,6 +186,7 @@ struct Golden__Tests {
         #expect(saved.colors.first?.red == 100)
     }
 
+    /// 已失效的编辑请求不能误写到仍存在的其他项目。
     @Test
     func testStaleEditsCannotModifyAnotherRecipe() {
         let removedColor = ColorInfo(red: 10, green: 20, blue: 30)
@@ -195,6 +209,7 @@ struct Golden__Tests {
         #expect(library.items == [survivor])
     }
 
+    /// 从已有颜色新增一项必须生成新身份，避免两个条目共享 UUID。
     @Test
     func testAddingFromExistingColorCreatesANewIdentity() throws {
         let color = ColorInfo(red: 100, green: 120, blue: 140)
@@ -209,6 +224,7 @@ struct Golden__Tests {
         #expect(colors.last?.red == color.red)
     }
 
+    /// 非有限通道值在保存前被规范化，不能破坏 JSON 编码。
     @Test
     func testNonFiniteRGBValuesCannotBreakSaving() throws {
         try withTemporaryDefaults { defaults in
@@ -227,6 +243,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 空白名称不能替换原有项目名或创建无名称项目。
     @Test
     func testBlankNamesDoNotReplaceSavedNames() throws {
         var library = RecipeLibrary(previewItems: [])
@@ -239,6 +256,7 @@ struct Golden__Tests {
         #expect(library.item(id: id)?.text == "原名称")
     }
 
+    /// 删除一个颜色应持久化，其他颜色和项目保持原有内容。
     @Test
     func testDeletingOneColorPersistsWithoutChangingOtherColorsOrProjects() throws {
         try withTemporaryDefaults { defaults in
@@ -259,6 +277,7 @@ struct Golden__Tests {
         }
     }
 
+    /// 删除最后一个颜色后项目仍存在，针对已删颜色的过期操作必须失败。
     @Test
     func testDeletingLastColorKeepsProjectAndRejectsStaleEdits() throws {
         let color = ColorInfo(red: 10, green: 20, blue: 30)
@@ -282,6 +301,7 @@ struct Golden__Tests {
         #expect(library.items.count == 1)
     }
 
+    /// 为测试创建唯一偏好域，并在正常返回或抛错时都清理测试数据。
     private func withTemporaryDefaults(_ body: (UserDefaults) throws -> Void) throws {
         let suiteName = "GoldenRecipeTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))

@@ -1,16 +1,65 @@
+// macOS 界面流程回归测试：验证项目编辑、AI 调色、商品参考、比例合色和说明书入口。
+// 通过辅助功能标识定位控件，常规流程使用测试启动参数与固定 AI 响应隔离用户数据。
 import XCTest
 import XCUIAutomation
 
+/// 在主线程驱动原生窗口与 SwiftUI 界面，验证用户能完成的端到端操作。
 @MainActor
 final class Golden__UITests: XCTestCase {
+    /// 首次断言失败后停止当前流程，避免对错误界面继续执行操作。
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
+    /// 每项测试结束后退出应用，减少窗口恢复状态对下一项用例的影响。
     override func tearDownWithError() throws {
         XCUIApplication().terminate()
     }
 
+    // MARK: - 项目与编辑窗口
+    /// 保存说明书要求后重开可恢复，切换项目不会混用另一项目的要求。
+    func testManualStudySavesRequirementsAndKeepsProjectsSeparate() {
+        let app = launchApp()
+        createRecipe("Manual project A", in: app)
+        let open = app.buttons["manualStudyButton"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 5))
+        open.click()
+
+        let kit = app.textFields["manualKitField"]
+        let theme = app.textViews["manualThemeField"]
+        XCTAssertTrue(kit.waitForExistence(timeout: 5))
+        XCTAssertTrue(theme.waitForExistence(timeout: 5))
+        XCTAssertEqual(kit.value as? String, "Manual project A")
+        XCTAssertFalse(app.buttons["manualExportButton"].isEnabled)
+        replaceText(in: kit, with: "Example kit 123")
+        replaceText(in: theme, with: "1944 specific vehicle")
+        app.buttons["manualSaveButton"].click()
+        XCTAssertTrue(app.staticTexts["已保存到此项目，下次打开可继续。"].waitForExistence(timeout: 5))
+        app.buttons["manualCloseButton"].click()
+        waitUntilGone(kit)
+
+        createRecipe("Manual project B", in: app)
+        app.buttons["manualStudyButton"].firstMatch.click()
+        XCTAssertTrue(kit.waitForExistence(timeout: 5))
+        XCTAssertEqual(kit.value as? String, "Manual project B")
+        XCTAssertEqual(theme.value as? String, "")
+        app.buttons["manualCloseButton"].click()
+        waitUntilGone(kit)
+
+        selectRecipe("Manual project A", in: app)
+        app.buttons["manualStudyButton"].firstMatch.click()
+        XCTAssertTrue(kit.waitForExistence(timeout: 5))
+        XCTAssertEqual(kit.value as? String, "Example kit 123")
+        XCTAssertEqual(theme.value as? String, "1944 specific vehicle")
+        XCTAssertFalse(app.buttons["manualSaveButton"].isEnabled)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "说明书考证入口与保存恢复"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        app.buttons["manualCloseButton"].click()
+    }
+
+    /// 编辑颜色本身后，已经保存的调色方法仍保留。
     func testColorEditingPreservesMethod() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("Recipe A", in: app)
@@ -39,6 +88,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.buttons["编辑调色方法：Two thin coats"].exists)
     }
 
+    /// 编辑器打开后切换侧栏项目，提交仍写回最初打开的项目。
     func testColorEditorKeepsItsRecipeWhenSelectionChanges() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("Second recipe", in: app)
@@ -58,6 +108,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.buttons["编辑颜色：Updated first color"].waitForExistence(timeout: 5))
     }
 
+    /// 多个主窗口共享同一颜色库，项目变化在窗口之间同步。
     func testRecipeChangesAreSharedAcrossWindows() {
         let app = launchApp()
         createRecipe("Shared recipe A", in: app)
@@ -76,6 +127,7 @@ final class Golden__UITests: XCTestCase {
         }
     }
 
+    /// 取消新建窗口后可以再次打开并正常使用，窗口引用不会残留。
     func testNewRecipeWindowCanBeCancelledAndReopened() {
         let app = launchApp()
 
@@ -91,6 +143,8 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Saved recipe"].firstMatch.exists)
     }
 
+    // MARK: - 调色输入、状态和结果
+    /// 无效 RGB 阻止生成，关闭后仍可重新进入调色界面。
     func testAIMixingRejectsInvalidRGBAndCanReopen() {
         let app = launchApp()
         XCTAssertFalse(app.buttons["aiMixingButton"].exists)
@@ -113,6 +167,7 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeAIMixingButton"].click()
     }
 
+    /// 高推理强度失败信息固定可见，不随长原料列表滚出可视区域。
     func testMaxFailureStaysVisibleAfterScrollingIngredients() {
         let app = launchApp(mixingResponse: "{}")
         app.buttons["aiSettingsButton"].firstMatch.click()
@@ -145,6 +200,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
     }
 
+    /// 高推理强度生成结果可保存并在独立窗口查看，保留模型来源。
     func testMaxEffortRecipeCanBeSavedAndViewed() throws {
         // The process layer has separate integration coverage; UI runs use no account quota or saved defaults.
         let app = launchApp(mixingResponse: try threeToneFixture())
@@ -181,7 +237,15 @@ final class Golden__UITests: XCTestCase {
                 object: heading
             )
             XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed, app.sheets.debugDescription)
-            XCTAssertTrue(app.descendants(matching: .any)["mixingTotal"].firstMatch.exists)
+            XCTAssertEqual(
+                app.staticTexts["mixingTotal"].value as? String,
+                identifier == "base" ? "合计 200 滴" : (identifier == "shadow" ? "20 滴本色 + 2 滴追加 · 合计 22 滴" : "20 滴本色 + 6 滴追加 · 合计 26 滴")
+            )
+            XCTAssertEqual(app.staticTexts["mixingBasePortion"].exists, identifier != "base")
+            if identifier != "base" {
+                XCTAssertTrue((app.staticTexts["mixingBasePortion"].value as? String)?.contains("UI 本色 · 20 滴") == true)
+                XCTAssertTrue((app.staticTexts["mixingBaseStep"].value as? String)?.contains("另取干净调色杯") == true)
+            }
         }
 
         XCTAssertTrue(app.buttons["saveAIMixingButton"].isEnabled)
@@ -217,7 +281,14 @@ final class Golden__UITests: XCTestCase {
                 object: heading
             )
             XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed, recipeWindow.debugDescription)
-            XCTAssertTrue(recipeWindow.descendants(matching: .any)["mixingTotal"].firstMatch.exists)
+            XCTAssertEqual(
+                recipeWindow.staticTexts["mixingTotal"].value as? String,
+                title == "本色" ? "合计 200 滴" : (title == "阴影色" ? "20 滴本色 + 2 滴追加 · 合计 22 滴" : "20 滴本色 + 6 滴追加 · 合计 26 滴")
+            )
+            XCTAssertEqual(recipeWindow.staticTexts["mixingBasePortion"].exists, title != "本色")
+            if title != "本色" {
+                XCTAssertTrue((recipeWindow.staticTexts["mixingBasePortion"].value as? String)?.contains("UI 本色 · 20 滴") == true)
+            }
             XCTAssertTrue(recipeWindow.buttons["copySavedMixingRecipeButton"].exists)
             XCTAssertEqual(
                 recipeWindow.descendants(matching: .any)["savedMixingModelSummary"].firstMatch.value as? String,
@@ -228,6 +299,7 @@ final class Golden__UITests: XCTestCase {
         }
     }
 
+    /// 项目内可独立删除单个颜色，删除最后一个也不删除项目。
     func testIndividualColorsCanBeDeletedWhileKeepingTheProject() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("Delete colors project", in: app)
@@ -252,6 +324,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["留白待色"].waitForExistence(timeout: 5))
     }
 
+    /// 比例输入校验反馈明确，增删行后仍至少保留两组颜色。
     func testBlendInputsValidateAndRowsCanBeRemoved() {
         let app = launchApp()
         createRecipe("合成输入项目", in: app)
@@ -289,6 +362,7 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeAIMixingButton"].click()
     }
 
+    /// 比例合色支持重新生成、保存和打开来源及步骤详情。
     func testAIBlendCanBeRegeneratedSavedAndViewed() throws {
         let app = launchApp(blendResponse: try blendFixture())
         createRecipe("AI 合成项目", in: app)
@@ -332,6 +406,8 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeSavedMixingRecipeButton"].click()
     }
 
+    // MARK: - 商品参考色与原料套装
+    /// 田宫标准色仅作为目标，用量来自 GOLDEN，保存后仍显示参考身份。
     func testTamiyaReferenceUsesGoldenIngredientsAndSurvivesSaving() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("Tamiya reference project", in: app)
@@ -387,6 +463,49 @@ final class Golden__UITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// XF-85 可在丙烯与珐琅中选用并保存；新增 LP、AS、PS 也能通过同一选择器访问。
+    func testExpandedTamiyaColorsCanBeSelectedAndRubberBlackCanBeSaved() throws {
+        let app = launchApp(mixingResponse: try threeToneFixture(shadowRGB: (8, 8, 8)))
+        createRecipe("Expanded Tamiya colors", in: app)
+        app.buttons["aiMixingButton"].firstMatch.click()
+        app.radioButtons["品牌标准色"].click()
+        selectReference("XF-85", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 35, 25, 22") == true)
+        chooseMenuOption("珐琅漆 · X / XF", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("XF-85", in: app)
+        let generate = app.buttons["generateMixingButton"]
+        revealBlendInput(generate, in: app)
+        generate.click()
+        XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10), app.sheets.debugDescription)
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#XF-85") == true)
+        app.buttons["saveAIMixingButton"].click()
+        waitUntilGone(generate)
+
+        app.buttons["查看本色配方"].firstMatch.click()
+        let saved = app.staticTexts["savedReferencePaint"]
+        XCTAssertTrue(saved.waitForExistence(timeout: 5))
+        XCTAssertTrue((saved.value as? String)?.contains("珐琅漆") == true)
+        XCTAssertTrue((saved.value as? String)?.contains("#XF-85") == true)
+        app.buttons["closeSavedMixingRecipeButton"].click()
+        waitUntilGone(saved)
+
+        app.buttons["aiMixingButton"].firstMatch.click()
+        XCTAssertTrue(app.staticTexts["selectedReferencePaint"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.popUpButtons["referencePaintSeriesPicker"].value as? String, "珐琅漆 · X / XF")
+        for (title, code) in [
+            ("Lacquer 溶剂型漆 · LP", "LP-85"),
+            ("航空模型喷罐漆 · AS", "AS-33"),
+            ("聚碳酸酯喷罐漆 · PS", "69944")
+        ] {
+            chooseMenuOption(title, picker: "referencePaintSeriesPicker", in: app)
+            selectReference(code, in: app)
+            XCTAssertTrue((app.staticTexts["selectedReferencePaint"].value as? String)?.contains("#\(code)") == true)
+            XCTAssertTrue(generate.isEnabled)
+        }
+        app.buttons["closeAIMixingButton"].click()
+    }
+
+    /// TS 喷罐标准色可生成、保存并重新调色，实际原料仍为 GOLDEN。
     func testTamiyaSprayReferenceGeneratesSavesAndReopensWithGoldenPaints() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("TS reference project", in: app)
@@ -413,7 +532,7 @@ final class Golden__UITests: XCTestCase {
             XCTAssertTrue((savedReference.value as? String)?.contains("喷罐漆 · TS") == true)
             XCTAssertTrue((savedReference.value as? String)?.contains("#TS-32") == true)
             XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
-            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, "合计 200 滴")
+            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, role == "本色" ? "合计 200 滴" : (role == "阴影色" ? "20 滴本色 + 2 滴追加 · 合计 22 滴" : "20 滴本色 + 6 滴追加 · 合计 26 滴"))
             app.buttons["closeSavedMixingRecipeButton"].click()
             waitUntilGone(savedReference)
         }
@@ -432,6 +551,7 @@ final class Golden__UITests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
     }
 
+    /// 离开标准色模式后不把旧郡士商品身份带入 RGB 或比例合色请求。
     func testMrHobbyReferenceIsClearedWhenSwitchingToRGBAndBlend() throws {
         let app = launchApp(
             mixingResponse: try threeToneFixture(whiteCode: "2380", blackCode: "2040"),
@@ -439,7 +559,7 @@ final class Golden__UITests: XCTestCase {
         )
         createRecipe("MrHobby reference project", in: app)
         app.buttons["aiMixingButton"].firstMatch.click()
-        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        chooseMenuOption("Fluid Acrylics 15 色", picker: "mixingPaintSetPicker", in: app)
         app.radioButtons["品牌标准色"].click()
         chooseMenuOption("郡士 Mr.Hobby", picker: "referencePaintBrandPicker", in: app)
         selectReference("C13", in: app)
@@ -478,6 +598,7 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeSavedMixingRecipeButton"].click()
     }
 
+    /// AI 返回外部品牌原料时显示错误，不能保存为有效 GOLDEN 配方。
     func testReferenceCannotSaveAIResponseUsingForeignIngredients() throws {
         let app = launchApp(mixingResponse: try threeToneFixture(whiteCode: "LP-2", blackCode: "LP-1"))
         createRecipe("Invalid ingredients project", in: app)
@@ -493,8 +614,9 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeAIMixingButton"].click()
     }
 
+    /// Fluid 原料在生成前后和已保存配方中都使用正确的系列与色号。
     func testFluidIngredientsDisplayAndRemainInSavedRecipes() throws {
-        let app = launchApp(mixingResponse: try threeToneFixture(whiteCode: "2380", blackCode: "2040"))
+        let app = launchApp(mixingResponse: try threeToneFixture(whiteCode: "2380", blackCode: "2040", shadowRGB: (16, 16, 16)))
         createRecipe("Fluid recipe project", in: app)
         app.buttons["aiMixingButton"].firstMatch.click()
         let summary = app.staticTexts["mixingPaintSummary"]
@@ -503,23 +625,25 @@ final class Golden__UITests: XCTestCase {
         let soFlatNote = app.staticTexts["paintPreviewNote-goldenSoFlat"]
         XCTAssertTrue((soFlatNote.value as? String)?.contains("近似屏幕参考") == true)
         XCTAssertTrue((soFlatNote.value as? String)?.contains("官方色样") == true)
-        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        chooseMenuOption("Fluid Acrylics 15 色", picker: "mixingPaintSetPicker", in: app)
         let fluidNote = app.staticTexts["paintPreviewNote-goldenFluid"]
         XCTAssertTrue(fluidNote.waitForExistence(timeout: 5))
         XCTAssertTrue((fluidNote.value as? String)?.contains("官方调色器的 sRGB") == true)
-        XCTAssertTrue((summary.value as? String)?.contains("13 色") == true)
+        XCTAssertTrue((summary.value as? String)?.contains("15 色") == true)
         XCTAssertFalse((summary.value as? String)?.contains("SoFlat") == true)
         XCTAssertFalse(app.descendants(matching: .any)["availablePaint-6755"].firstMatch.exists)
         app.radioButtons["品牌标准色"].click()
         chooseMenuOption("GOLDEN", picker: "referencePaintBrandPicker", in: app)
-        chooseMenuOption("Fluid Acrylics · 指定 13 色", picker: "referencePaintSeriesPicker", in: app)
-        selectReference("2276", in: app)
-        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 243, 60, 0") == true)
+        chooseMenuOption("Fluid Acrylics · 指定 15 色", picker: "referencePaintSeriesPicker", in: app)
+        selectReference("2400", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 25, 18, 62") == true)
+        selectReference("2250", in: app)
+        XCTAssertTrue((app.staticTexts["referencePreviewRGB"].value as? String)?.contains("RGB 0, 118, 57") == true)
         let generate = app.buttons["generateMixingButton"]
         revealBlendInput(generate, in: app)
         generate.click()
         XCTAssertTrue(app.buttons["mixingRole-base"].waitForExistence(timeout: 10))
-        XCTAssertTrue((app.buttons["mixingRole-base"].value as? String)?.contains("RGB 243, 60, 0") == true)
+        XCTAssertTrue((app.buttons["mixingRole-base"].value as? String)?.contains("RGB 0, 118, 57") == true)
         XCTAssertFalse(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
         let generatedWhite = app.descendants(matching: .any)["recipePaint-2380"].firstMatch
         revealPaintRow(generatedWhite, in: app.scrollViews["mixingResultsScrollView"])
@@ -530,23 +654,28 @@ final class Golden__UITests: XCTestCase {
         let series = app.staticTexts["savedMixingPaintSeries"]
         XCTAssertTrue(series.waitForExistence(timeout: 5))
         XCTAssertEqual(series.value as? String, "调色用漆：GOLDEN Fluid Acrylics")
-        XCTAssertTrue((app.staticTexts["mixingTargetRGB"].value as? String)?.contains("RGB 243, 60, 0") == true)
-        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#2276") == true)
+        XCTAssertTrue((app.staticTexts["mixingTargetRGB"].value as? String)?.contains("RGB 0, 118, 57") == true)
+        XCTAssertTrue((app.staticTexts["savedReferencePaint"].value as? String)?.contains("#2250") == true)
         let fluidWhite = app.descendants(matching: .any)["recipePaint-2380"].firstMatch
         revealPaintRow(fluidWhite, in: app.scrollViews["savedMixingRecipeScrollView"])
         XCTAssertTrue(fluidWhite.label.contains("199 滴"), fluidWhite.label)
         XCTAssertTrue(fluidWhite.label.contains("GOLDEN Fluid Acrylics"), fluidWhite.label)
         XCTAssertFalse(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
         XCTAssertTrue(app.descendants(matching: .any)["recipePaint-2407"].firstMatch.exists)
+        let green = app.descendants(matching: .any)["recipePaint-2250"].firstMatch
+        revealPaintRow(green, in: app.scrollViews["savedMixingRecipeScrollView"])
+        XCTAssertTrue(green.label.contains("Permanent Green Light"), green.label)
+        XCTAssertTrue(app.descendants(matching: .any)["recipePaint-2400"].firstMatch.exists)
         app.buttons["closeSavedMixingRecipeButton"].click()
         waitUntilGone(series)
         app.buttons["aiMixingButton"].firstMatch.click()
         let picker = app.popUpButtons["mixingPaintSetPicker"]
         XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        XCTAssertEqual(picker.value as? String, "Fluid Acrylics 13 色")
+        XCTAssertEqual(picker.value as? String, "Fluid Acrylics 15 色")
         app.buttons["closeAIMixingButton"].click()
     }
 
+    /// 切换原料套装清空旧结果，并拒绝返回属于另一个套装的配方。
     func testSwitchingIngredientKitClearsResultsAndRejectsOtherKit() throws {
         let app = launchApp(mixingResponse: try threeToneFixture())
         createRecipe("Kit selection project", in: app)
@@ -561,7 +690,7 @@ final class Golden__UITests: XCTestCase {
 
         let picker = app.popUpButtons["mixingPaintSetPicker"]
         revealBlendInput(picker, in: app, scrollDown: false)
-        chooseMenuOption("Fluid Acrylics 13 色", picker: "mixingPaintSetPicker", in: app)
+        chooseMenuOption("Fluid Acrylics 15 色", picker: "mixingPaintSetPicker", in: app)
         XCTAssertFalse(app.buttons["mixingRole-base"].exists)
         XCTAssertFalse(app.buttons["saveAIMixingButton"].isEnabled)
         XCTAssertFalse(app.buttons["复制三色配方"].isEnabled)
@@ -582,6 +711,8 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeAIMixingButton"].click()
     }
 
+    // MARK: - 商品选择与滚动辅助
+    /// 在有限次数内滚动到目标原料行，失败时附带控件诊断。
     private func revealPaintRow(_ row: XCUIElement, in scrollView: XCUIElement) {
         for _ in 0..<16 {
             if row.exists && row.isHittable { break }
@@ -590,6 +721,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(row.isHittable, row.debugDescription)
     }
 
+    /// 通过搜索色号选择标准色，并等待选中详情出现。
     private func selectReference(_ code: String, in app: XCUIApplication) {
         let search = app.textFields["referencePaintSearchField"]
         XCTAssertTrue(search.waitForExistence(timeout: 5))
@@ -600,6 +732,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["selectedReferencePaint"].exists)
     }
 
+    /// 操作原生弹出菜单；窗口恢复后首击只激活窗口时允许重试。
     private func chooseMenuOption(_ option: String, picker: String, in app: XCUIApplication) {
         let control = app.popUpButtons[picker]
         XCTAssertTrue(control.waitForExistence(timeout: 5))
@@ -612,6 +745,7 @@ final class Golden__UITests: XCTestCase {
         item.click()
     }
 
+    /// H1/H2 商品比例合色可生成、保存及查看，输入身份不会退化为纯 RGB。
     func testBrandBlendH1AndH2CanBeGeneratedSavedAndViewed() throws {
         let app = launchApp(blendResponse: try blendFixture())
         createRecipe("H1 H2 blend project", in: app)
@@ -681,13 +815,19 @@ final class Golden__UITests: XCTestCase {
                 XCTAssertTrue(summary.contains("\(percentage)%"))
             }
             XCTAssertEqual(app.staticTexts["savedMixingPaintSeries"].value as? String, "调色用漆：GOLDEN SoFlat")
-            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, "合计 200 滴")
-            XCTAssertTrue(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+            XCTAssertEqual(app.staticTexts["mixingTotal"].value as? String, role == "本色" ? "合计 200 滴" : (role == "阴影色" ? "20 滴本色 + 2 滴追加 · 合计 22 滴" : "20 滴本色 + 6 滴追加 · 合计 26 滴"))
+            let addedCode = role == "阴影色" ? "6745" : "6755"
+            XCTAssertTrue(app.descendants(matching: .any)["recipePaint-\(addedCode)"].firstMatch.exists)
+            if role == "阴影色" {
+                XCTAssertFalse(app.descendants(matching: .any)["recipePaint-6755"].firstMatch.exists)
+            }
             app.buttons["closeSavedMixingRecipeButton"].click()
             waitUntilGone(target)
         }
     }
 
+    // MARK: - 合色编辑与固定响应
+    /// 打开调色弹窗并切换到多色合成，等待输入控件就绪。
     private func openBlendEditor(in app: XCUIApplication) {
         app.buttons["aiMixingButton"].firstMatch.click()
         let mode = app.radioButtons["多色合成"]
@@ -696,9 +836,11 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.textFields["blendRField-0"].waitForExistence(timeout: 5))
     }
 
+    /// 将目标合色控件完整滚入输入区，避免点击被底部操作栏遮挡的元素。
     private func revealBlendInput(_ element: XCUIElement, in app: XCUIApplication, scrollDown: Bool = true) {
         let scrollView = app.scrollViews["mixingInputScrollView"]
         // macOS can report a clipped button as hittable while its center sits behind the sheet footer.
+        /// 除 isHittable 外检查完整可视范围，处理 macOS 对裁切控件的宽松命中报告。
         func isVisible() -> Bool {
             guard element.exists, element.isHittable else { return false }
             let viewport = scrollView.frame.insetBy(dx: 0, dy: 8)
@@ -711,6 +853,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(isVisible(), element.debugDescription)
     }
 
+    /// 在固定三色响应外加入合成目标与说明，不依赖真实 AI 结果。
     private func blendFixture(whiteCode: String = "6755", blackCode: String = "6745") throws -> String {
         let palette = try JSONSerialization.jsonObject(with: Data(threeToneFixture(whiteCode: whiteCode, blackCode: blackCode).utf8))
         return String(decoding: try JSONSerialization.data(withJSONObject: [
@@ -722,20 +865,25 @@ final class Golden__UITests: XCTestCase {
         ]), as: UTF8.self)
     }
 
-    private func threeToneFixture(whiteCode: String = "6755", blackCode: String = "6745") throws -> String {
+    /// 构造可指定套装色号和阴影目标的响应，用于正常流程及错误原料测试。
+    private func threeToneFixture(
+        whiteCode: String = "6755", blackCode: String = "6745",
+        shadowRGB: (red: Int, green: Int, blue: Int) = (64, 80, 64)
+    ) throws -> String {
         let isGolden = ["6755", "2380"].contains(whiteCode)
         let codes: [String]
         switch whiteCode {
         case "6755":
             codes = ["6755", "6745", "6660", "6610", "6505", "6550", "6645", "6510", "6570", "6530", "6595", "6675"]
         case "2380":
-            codes = ["2009", "2008", "2210", "2305", "2260", "2255", "2270", "2275", "2040", "2380", "2276", "2150", "2407"]
+            codes = ["2009", "2008", "2210", "2305", "2260", "2255", "2270", "2275", "2040", "2380", "2276", "2150", "2407", "2400", "2250"]
         default:
             codes = [whiteCode, blackCode]
         }
-        func recipe(_ name: String, white: Int) -> [String: Any] {
+        /// 本色为 200 滴；伴随色只列追加量，步骤仅包含非零原料。
+        func recipe(_ name: String, white: Int, total: Int = 200) -> [String: Any] {
             let ingredients: [[String: Any]] = codes.map {
-                ["paintCode": $0, "drops": $0 == whiteCode ? white : ($0 == blackCode ? 200 - white : 0)]
+                ["paintCode": $0, "drops": $0 == whiteCode ? white : ($0 == blackCode ? total - white : 0)]
             }.filter { isGolden || ($0["drops"] as? Int ?? 0) > 0 }
             let steps: [[String: Any]] = ingredients.compactMap { ingredient in
                 guard let drops = ingredient["drops"] as? Int, drops > 0 else { return nil }
@@ -750,18 +898,23 @@ final class Golden__UITests: XCTestCase {
         let object: [String: Any] = [
             "base": recipe("UI 本色", white: 199),
             "shadow": [
-                "target": ["red": 64, "green": 80, "blue": 64],
-                "recipe": recipe("UI 阴影色", white: 100)
+                "target": ["red": shadowRGB.red, "green": shadowRGB.green, "blue": shadowRGB.blue],
+                "baseDrops": 20,
+                "recipe": recipe("UI 阴影色", white: 0, total: 2)
             ],
             "highlight": [
+                // 测试参考灰色较亮，用纯白目标确保高光满足层次阈值。
                 // Preserve the required contrast for brighter, sourced reference grays.
                 "target": ["red": 255, "green": 255, "blue": 255],
-                "recipe": recipe("UI 高光色", white: 200)
+                "baseDrops": 20,
+                "recipe": recipe("UI 高光色", white: 6, total: 6)
             ]
         ]
         return String(decoding: try JSONSerialization.data(withJSONObject: object), as: UTF8.self)
     }
 
+    // MARK: - 应用与窗口操作
+    /// 使用测试启动参数加载内存库，可通过环境注入调色和合色响应。
     private func launchApp(mixingResponse: String? = nil, blendResponse: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         // Use an in-memory library so UI automation cannot modify real recipes.
@@ -773,6 +926,7 @@ final class Golden__UITests: XCTestCase {
             app.launchEnvironment["GOLDEN_UI_BLEND_RESPONSE"] = blendResponse
         }
         app.launch()
+        // macOS 可能恢复成无窗口状态，通过应用的新窗口快捷键重新建立工作台。
         // macOS can restore a previous run with all windows closed; use the app's New Window command.
         if !app.windows.firstMatch.waitForExistence(timeout: 3) {
             app.typeKey("n", modifierFlags: [.command])
@@ -781,6 +935,7 @@ final class Golden__UITests: XCTestCase {
         return app
     }
 
+    /// 通过真实新建流程创建项目，并等待表单关闭及项目出现。
     private func createRecipe(_ name: String, in app: XCUIApplication) {
         app.activate()
         app.buttons["newRecipeButton"].firstMatch.click()
@@ -793,6 +948,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.staticTexts[name].firstMatch.waitForExistence(timeout: 5))
     }
 
+    /// 生成并保存固定三色结果，确认本色色卡已进入项目。
     private func generatePalette(in app: XCUIApplication) {
         app.activate()
         app.buttons["aiMixingButton"].firstMatch.click()
@@ -805,6 +961,7 @@ final class Golden__UITests: XCTestCase {
         XCTAssertTrue(app.buttons["编辑颜色：本色 · UI 本色"].waitForExistence(timeout: 5))
     }
 
+    /// 从侧栏选择项目，点击露在浮动窗口外的行首位置。
     private func selectRecipe(_ name: String, in app: XCUIApplication) {
         app.activate()
         let row = app.outlines.outlineRows.containing(.staticText, identifier: name).firstMatch
@@ -813,12 +970,14 @@ final class Golden__UITests: XCTestCase {
         row.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.5)).click()
     }
 
+    /// 以全选后输入的方式替换字段，避免在原值后追加。
     private func replaceText(in field: XCUIElement, with text: String) {
         field.click()
         field.typeKey("a", modifierFlags: [.command])
         field.typeText(text)
     }
 
+    /// 用可等待的存在性谓词确认窗口或弹窗已消失，不依赖固定延时。
     private func waitUntilGone(_ element: XCUIElement) {
         let expectation = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "exists == false"),

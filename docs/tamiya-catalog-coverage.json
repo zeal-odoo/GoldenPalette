@@ -1,0 +1,2943 @@
+{
+  "date": "2026-11-13",
+  "version": "1.0.18",
+  "scope": "Colored reference paints in Tamiya acrylic X/XF, enamel X/XF, LP, TS, AS and PS catalogs, including PS special item 69944. Not a catalog of primers, paint markers, panel liners, weathering products or clear coating agents.",
+  "colorlessAndAdditiveExclusions": {
+    "tamiyaAcrylic": [
+      "X-20A",
+      "X-21",
+      "X-22",
+      "X-35",
+      "XF-86"
+    ],
+    "tamiyaEnamel": [
+      "X-20",
+      "X-21",
+      "X-22"
+    ],
+    "tamiyaLacquer": [
+      "LP-9",
+      "LP-10",
+      "LP-22",
+      "LP-23",
+      "LP-24",
+      "LP-49"
+    ],
+    "tamiyaSpray": [
+      "TS-13",
+      "TS-65",
+      "TS-79",
+      "TS-80"
+    ],
+    "tamiyaPolycarbonate": [
+      "PS-53",
+      "PS-55",
+      "PS-58"
+    ]
+  },
+  "legacyOnly": {
+    "tamiyaEnamel": [
+      "XF-67",
+      "XF-68",
+      "XF-69"
+    ]
+  },
+  "legacyOnlyReason": "These three pre-existing enamel records are absent from both current Japanese and English official enamel catalogs. Keep their identity and RGB to load old recipes; exclude from new search results. Acrylic versions remain available.",
+  "samplingMethod": "ICC-enabled MuPDF 1.28.2, official 202405 PDF page 2, 6x6 pt region inside the exact labeled chip rendered at 4x to sRGB, per-channel median. PS 46/47 are angle-dependent effects: one chart sample is only a color reference. The 202605 PDF search result returned HTTP 404 on both official hostnames, so it was not used.",
+  "series": {
+    "tamiyaAcrylic": {
+      "selectableCount": 101,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010&absolutepage=2",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010&absolutepage=3",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010&absolutepage=4",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010&absolutepage=5",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504010&absolutepage=6"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaAcrylic-1.html",
+          "sha256": "87fcfe657523a4bc0d5ac745530ac58b33dfbe332e0a51f58bd5cff315b7bc6a"
+        },
+        {
+          "page": "tamiyaAcrylic-2.html",
+          "sha256": "503b6813d5371f72192dded14d36a65b6dbc659107b153e44d1ad6a076cbb131"
+        },
+        {
+          "page": "tamiyaAcrylic-3.html",
+          "sha256": "39f8e9d7379689009965162524618a1dc976acd2ac6caa253b310a8469cb276a"
+        },
+        {
+          "page": "tamiyaAcrylic-4.html",
+          "sha256": "af2fcac8f1d091b3de8627bf8369d3e2ba050201b39197e4d55ae0c43094e21a"
+        },
+        {
+          "page": "tamiyaAcrylic-5.html",
+          "sha256": "47285825f874c61cf5579b82aeca9bb24bc5433b1c77e18aa184d255cef943b3"
+        },
+        {
+          "page": "tamiyaAcrylic-6.html",
+          "sha256": "88271685c29531ed89d1b12479d8228c33917b5e7fdacd5d8f0af162217f04e6"
+        }
+      ],
+      "colors": [
+        {
+          "code": "X-1",
+          "name": "Black",
+          "item": "81501",
+          "productURL": "https://www.tamiya.com/english/products/81501/index.html"
+        },
+        {
+          "code": "X-2",
+          "name": "White",
+          "item": "81502",
+          "productURL": "https://www.tamiya.com/english/products/81502/index.html"
+        },
+        {
+          "code": "X-3",
+          "name": "Royal Blue",
+          "item": "81503",
+          "productURL": "https://www.tamiya.com/english/products/81503/index.html"
+        },
+        {
+          "code": "X-4",
+          "name": "Blue",
+          "item": "81504",
+          "productURL": "https://www.tamiya.com/english/products/81504/index.html"
+        },
+        {
+          "code": "X-5",
+          "name": "Green",
+          "item": "81505",
+          "productURL": "https://www.tamiya.com/english/products/81505/index.html"
+        },
+        {
+          "code": "X-6",
+          "name": "Orange",
+          "item": "81506",
+          "productURL": "https://www.tamiya.com/english/products/81506/index.html"
+        },
+        {
+          "code": "X-7",
+          "name": "Red",
+          "item": "81507",
+          "productURL": "https://www.tamiya.com/english/products/81507/index.html"
+        },
+        {
+          "code": "X-8",
+          "name": "Lemon Yellow",
+          "item": "81508",
+          "productURL": "https://www.tamiya.com/english/products/81508/index.html"
+        },
+        {
+          "code": "X-9",
+          "name": "Brown",
+          "item": "81509",
+          "productURL": "https://www.tamiya.com/english/products/81509/index.html"
+        },
+        {
+          "code": "X-10",
+          "name": "Gun Metal",
+          "item": "81510",
+          "productURL": "https://www.tamiya.com/english/products/81510/index.html"
+        },
+        {
+          "code": "X-11",
+          "name": "Chrome Silver",
+          "item": "81511",
+          "productURL": "https://www.tamiya.com/english/products/81511/index.html"
+        },
+        {
+          "code": "X-12",
+          "name": "Gold Leaf",
+          "item": "81512",
+          "productURL": "https://www.tamiya.com/english/products/81512/index.html"
+        },
+        {
+          "code": "X-13",
+          "name": "Metallic Blue",
+          "item": "81513",
+          "productURL": "https://www.tamiya.com/english/products/81513/index.html"
+        },
+        {
+          "code": "X-14",
+          "name": "Sky Blue",
+          "item": "81514",
+          "productURL": "https://www.tamiya.com/english/products/81514/index.html"
+        },
+        {
+          "code": "X-15",
+          "name": "Light Green",
+          "item": "81515",
+          "productURL": "https://www.tamiya.com/english/products/81515/index.html"
+        },
+        {
+          "code": "X-16",
+          "name": "Purple",
+          "item": "81516",
+          "productURL": "https://www.tamiya.com/english/products/81516/index.html"
+        },
+        {
+          "code": "X-17",
+          "name": "Pink",
+          "item": "81517",
+          "productURL": "https://www.tamiya.com/english/products/81517/index.html"
+        },
+        {
+          "code": "X-18",
+          "name": "Semi Gloss Black",
+          "item": "81518",
+          "productURL": "https://www.tamiya.com/english/products/81518/index.html"
+        },
+        {
+          "code": "X-19",
+          "name": "Smoke",
+          "item": "81519",
+          "productURL": "https://www.tamiya.com/english/products/81519/index.html"
+        },
+        {
+          "code": "X-23",
+          "name": "Clear Blue",
+          "item": "81523",
+          "productURL": "https://www.tamiya.com/english/products/81523/index.html"
+        },
+        {
+          "code": "X-24",
+          "name": "Clear Yellow",
+          "item": "81524",
+          "productURL": "https://www.tamiya.com/english/products/81524/index.html"
+        },
+        {
+          "code": "X-25",
+          "name": "Clear Green",
+          "item": "81525",
+          "productURL": "https://www.tamiya.com/english/products/81525/index.html"
+        },
+        {
+          "code": "X-26",
+          "name": "Clear Orange",
+          "item": "81526",
+          "productURL": "https://www.tamiya.com/english/products/81526/index.html"
+        },
+        {
+          "code": "X-27",
+          "name": "Clear Red",
+          "item": "81527",
+          "productURL": "https://www.tamiya.com/english/products/81527/index.html"
+        },
+        {
+          "code": "X-28",
+          "name": "Park Green",
+          "item": "81528",
+          "productURL": "https://www.tamiya.com/english/products/81528/index.html"
+        },
+        {
+          "code": "X-31",
+          "name": "Titanium Gold",
+          "item": "81531",
+          "productURL": "https://www.tamiya.com/english/products/81531/index.html"
+        },
+        {
+          "code": "X-32",
+          "name": "Titanium Silver",
+          "item": "81532",
+          "productURL": "https://www.tamiya.com/english/products/81532/index.html"
+        },
+        {
+          "code": "X-33",
+          "name": "Bronze",
+          "item": "81533",
+          "productURL": "https://www.tamiya.com/english/products/81533/index.html"
+        },
+        {
+          "code": "X-34",
+          "name": "Metallic Brown",
+          "item": "81534",
+          "productURL": "https://www.tamiya.com/english/products/81534/index.html"
+        },
+        {
+          "code": "XF-1",
+          "name": "Flat Black",
+          "item": "81701",
+          "productURL": "https://www.tamiya.com/english/products/81701/index.html"
+        },
+        {
+          "code": "XF-2",
+          "name": "Flat White",
+          "item": "81702",
+          "productURL": "https://www.tamiya.com/english/products/81702/index.html"
+        },
+        {
+          "code": "XF-3",
+          "name": "Flat Yellow",
+          "item": "81703",
+          "productURL": "https://www.tamiya.com/english/products/81703/index.html"
+        },
+        {
+          "code": "XF-4",
+          "name": "Yellow Green",
+          "item": "81704",
+          "productURL": "https://www.tamiya.com/english/products/81704/index.html"
+        },
+        {
+          "code": "XF-5",
+          "name": "Flat Green",
+          "item": "81705",
+          "productURL": "https://www.tamiya.com/english/products/81705/index.html"
+        },
+        {
+          "code": "XF-6",
+          "name": "Copper",
+          "item": "81706",
+          "productURL": "https://www.tamiya.com/english/products/81706/index.html"
+        },
+        {
+          "code": "XF-7",
+          "name": "Flat Red",
+          "item": "81707",
+          "productURL": "https://www.tamiya.com/english/products/81707/index.html"
+        },
+        {
+          "code": "XF-8",
+          "name": "Flat Blue",
+          "item": "81708",
+          "productURL": "https://www.tamiya.com/english/products/81708/index.html"
+        },
+        {
+          "code": "XF-9",
+          "name": "Hull Red",
+          "item": "81709",
+          "productURL": "https://www.tamiya.com/english/products/81709/index.html"
+        },
+        {
+          "code": "XF-10",
+          "name": "Flat Brown",
+          "item": "81710",
+          "productURL": "https://www.tamiya.com/english/products/81710/index.html"
+        },
+        {
+          "code": "XF-11",
+          "name": "J.N. Green",
+          "item": "81711",
+          "productURL": "https://www.tamiya.com/english/products/81711/index.html"
+        },
+        {
+          "code": "XF-12",
+          "name": "J.N. Grey",
+          "item": "81712",
+          "productURL": "https://www.tamiya.com/english/products/81712/index.html"
+        },
+        {
+          "code": "XF-13",
+          "name": "J.A. Green",
+          "item": "81713",
+          "productURL": "https://www.tamiya.com/english/products/81713/index.html"
+        },
+        {
+          "code": "XF-14",
+          "name": "J.A. Grey",
+          "item": "81714",
+          "productURL": "https://www.tamiya.com/english/products/81714/index.html"
+        },
+        {
+          "code": "XF-15",
+          "name": "Flat Flesh",
+          "item": "81715",
+          "productURL": "https://www.tamiya.com/english/products/81715/index.html"
+        },
+        {
+          "code": "XF-16",
+          "name": "Flat Aluminum",
+          "item": "81716",
+          "productURL": "https://www.tamiya.com/english/products/81716/index.html"
+        },
+        {
+          "code": "XF-17",
+          "name": "Sea Blue",
+          "item": "81717",
+          "productURL": "https://www.tamiya.com/english/products/81717/index.html"
+        },
+        {
+          "code": "XF-18",
+          "name": "Medium Blue",
+          "item": "81718",
+          "productURL": "https://www.tamiya.com/english/products/81718/index.html"
+        },
+        {
+          "code": "XF-19",
+          "name": "Sky Grey",
+          "item": "81719",
+          "productURL": "https://www.tamiya.com/english/products/81719/index.html"
+        },
+        {
+          "code": "XF-20",
+          "name": "Medium Grey",
+          "item": "81720",
+          "productURL": "https://www.tamiya.com/english/products/81720/index.html"
+        },
+        {
+          "code": "XF-21",
+          "name": "Sky",
+          "item": "81721",
+          "productURL": "https://www.tamiya.com/english/products/81721/index.html"
+        },
+        {
+          "code": "XF-22",
+          "name": "RLM Grey",
+          "item": "81722",
+          "productURL": "https://www.tamiya.com/english/products/81722/index.html"
+        },
+        {
+          "code": "XF-23",
+          "name": "Light Blue",
+          "item": "81723",
+          "productURL": "https://www.tamiya.com/english/products/81723/index.html"
+        },
+        {
+          "code": "XF-24",
+          "name": "Dark Grey",
+          "item": "81724",
+          "productURL": "https://www.tamiya.com/english/products/81724/index.html"
+        },
+        {
+          "code": "XF-25",
+          "name": "Light Sea Grey",
+          "item": "81725",
+          "productURL": "https://www.tamiya.com/english/products/81725/index.html"
+        },
+        {
+          "code": "XF-26",
+          "name": "Deep Green",
+          "item": "81726",
+          "productURL": "https://www.tamiya.com/english/products/81726/index.html"
+        },
+        {
+          "code": "XF-27",
+          "name": "Black Green",
+          "item": "81727",
+          "productURL": "https://www.tamiya.com/english/products/81727/index.html"
+        },
+        {
+          "code": "XF-28",
+          "name": "Dark Copper",
+          "item": "81728",
+          "productURL": "https://www.tamiya.com/english/products/81728/index.html"
+        },
+        {
+          "code": "XF-49",
+          "name": "Khaki",
+          "item": "81749",
+          "productURL": "https://www.tamiya.com/english/products/81749/index.html"
+        },
+        {
+          "code": "XF-50",
+          "name": "Field Blue",
+          "item": "81750",
+          "productURL": "https://www.tamiya.com/english/products/81750/index.html"
+        },
+        {
+          "code": "XF-51",
+          "name": "Khaki Drab",
+          "item": "81751",
+          "productURL": "https://www.tamiya.com/english/products/81751/index.html"
+        },
+        {
+          "code": "XF-52",
+          "name": "Flat Earth",
+          "item": "81752",
+          "productURL": "https://www.tamiya.com/english/products/81752/index.html"
+        },
+        {
+          "code": "XF-53",
+          "name": "Neutral Grey",
+          "item": "81753",
+          "productURL": "https://www.tamiya.com/english/products/81753/index.html"
+        },
+        {
+          "code": "XF-54",
+          "name": "Dark Sea Grey",
+          "item": "81754",
+          "productURL": "https://www.tamiya.com/english/products/81754/index.html"
+        },
+        {
+          "code": "XF-55",
+          "name": "Deck Tan",
+          "item": "81755",
+          "productURL": "https://www.tamiya.com/english/products/81755/index.html"
+        },
+        {
+          "code": "XF-56",
+          "name": "Metallic Grey",
+          "item": "81756",
+          "productURL": "https://www.tamiya.com/english/products/81756/index.html"
+        },
+        {
+          "code": "XF-57",
+          "name": "Buff",
+          "item": "81757",
+          "productURL": "https://www.tamiya.com/english/products/81757/index.html"
+        },
+        {
+          "code": "XF-58",
+          "name": "Olive Green",
+          "item": "81758",
+          "productURL": "https://www.tamiya.com/english/products/81758/index.html"
+        },
+        {
+          "code": "XF-59",
+          "name": "Desert Yellow",
+          "item": "81759",
+          "productURL": "https://www.tamiya.com/english/products/81759/index.html"
+        },
+        {
+          "code": "XF-60",
+          "name": "Dark Yellow",
+          "item": "81760",
+          "productURL": "https://www.tamiya.com/english/products/81760/index.html"
+        },
+        {
+          "code": "XF-61",
+          "name": "Dark Green",
+          "item": "81761",
+          "productURL": "https://www.tamiya.com/english/products/81761/index.html"
+        },
+        {
+          "code": "XF-62",
+          "name": "Olive Drab",
+          "item": "81762",
+          "productURL": "https://www.tamiya.com/english/products/81762/index.html"
+        },
+        {
+          "code": "XF-63",
+          "name": "German Grey",
+          "item": "81763",
+          "productURL": "https://www.tamiya.com/english/products/81763/index.html"
+        },
+        {
+          "code": "XF-64",
+          "name": "Red Brown",
+          "item": "81764",
+          "productURL": "https://www.tamiya.com/english/products/81764/index.html"
+        },
+        {
+          "code": "XF-65",
+          "name": "Field Grey",
+          "item": "81765",
+          "productURL": "https://www.tamiya.com/english/products/81765/index.html"
+        },
+        {
+          "code": "XF-66",
+          "name": "Light Grey",
+          "item": "81766",
+          "productURL": "https://www.tamiya.com/english/products/81766/index.html"
+        },
+        {
+          "code": "XF-67",
+          "name": "NATO Green",
+          "item": "81767",
+          "productURL": "https://www.tamiya.com/english/products/81767/index.html"
+        },
+        {
+          "code": "XF-68",
+          "name": "NATO Brown",
+          "item": "81768",
+          "productURL": "https://www.tamiya.com/english/products/81768/index.html"
+        },
+        {
+          "code": "XF-69",
+          "name": "NATO Black",
+          "item": "81769",
+          "productURL": "https://www.tamiya.com/english/products/81769/index.html"
+        },
+        {
+          "code": "XF-70",
+          "name": "Dark Green 2 (IJN)",
+          "item": "81770",
+          "productURL": "https://www.tamiya.com/english/products/81770/index.html"
+        },
+        {
+          "code": "XF-71",
+          "name": "Cockpit Green (IJN)",
+          "item": "81771",
+          "productURL": "https://www.tamiya.com/english/products/81771/index.html"
+        },
+        {
+          "code": "XF-72",
+          "name": "Brown (JGSDF)",
+          "item": "81772",
+          "productURL": "https://www.tamiya.com/english/products/81772/index.html"
+        },
+        {
+          "code": "XF-73",
+          "name": "Dark Green (JGSDF)",
+          "item": "81773",
+          "productURL": "https://www.tamiya.com/english/products/81773/index.html"
+        },
+        {
+          "code": "XF-74",
+          "name": "Olive Drab (JGSDF)",
+          "item": "81774",
+          "productURL": "https://www.tamiya.com/english/products/81774/index.html"
+        },
+        {
+          "code": "XF-75",
+          "name": "IJN Gray (Kure Arsenal)",
+          "item": "81775",
+          "productURL": "https://www.tamiya.com/english/products/81775/index.html"
+        },
+        {
+          "code": "XF-76",
+          "name": "Gray Green (IJN)",
+          "item": "81776",
+          "productURL": "https://www.tamiya.com/english/products/81776/index.html"
+        },
+        {
+          "code": "XF-77",
+          "name": "IJN Gray (Sasebo Arsenal)",
+          "item": "81777",
+          "productURL": "https://www.tamiya.com/english/products/81777/index.html"
+        },
+        {
+          "code": "XF-78",
+          "name": "Wooden Deck Tan",
+          "item": "81778",
+          "productURL": "https://www.tamiya.com/english/products/81778/index.html"
+        },
+        {
+          "code": "XF-79",
+          "name": "Linoleum Deck Brown",
+          "item": "81779",
+          "productURL": "https://www.tamiya.com/english/products/81779/index.html"
+        },
+        {
+          "code": "XF-80",
+          "name": "Royal Light Gray",
+          "item": "81780",
+          "productURL": "https://www.tamiya.com/english/products/81780/index.html"
+        },
+        {
+          "code": "XF-81",
+          "name": "Dark Green 2 (RAF)",
+          "item": "81781",
+          "productURL": "https://www.tamiya.com/english/products/81781/index.html"
+        },
+        {
+          "code": "XF-82",
+          "name": "Ocean Gray 2 (RAF)",
+          "item": "81782",
+          "productURL": "https://www.tamiya.com/english/products/81782/index.html"
+        },
+        {
+          "code": "XF-83",
+          "name": "Medium Sea Gray 2 (RAF)",
+          "item": "81783",
+          "productURL": "https://www.tamiya.com/english/products/81783/index.html"
+        },
+        {
+          "code": "XF-84",
+          "name": "Dark Iron",
+          "item": "81784",
+          "productURL": "https://www.tamiya.com/english/products/81784/index.html"
+        },
+        {
+          "code": "XF-85",
+          "name": "Rubber Black",
+          "item": "81785",
+          "productURL": "https://www.tamiya.com/english/products/81785/index.html"
+        },
+        {
+          "code": "XF-87",
+          "name": "IJN Gray (Maizuru Arsenal)",
+          "item": "81787",
+          "productURL": "https://www.tamiya.com/english/products/81787/index.html"
+        },
+        {
+          "code": "XF-88",
+          "name": "Dark Yellow 2",
+          "item": "81788",
+          "productURL": "https://www.tamiya.com/english/products/81788/index.html"
+        },
+        {
+          "code": "XF-89",
+          "name": "Dark Green 2",
+          "item": "81789",
+          "productURL": "https://www.tamiya.com/english/products/81789/index.html"
+        },
+        {
+          "code": "XF-90",
+          "name": "Red Brown 2",
+          "item": "81790",
+          "productURL": "https://www.tamiya.com/english/products/81790/index.html"
+        },
+        {
+          "code": "XF-91",
+          "name": "IJN Gray (Yokosuka Arsenal)",
+          "item": "81791",
+          "productURL": "https://www.tamiya.com/english/products/81791/index.html"
+        },
+        {
+          "code": "XF-92",
+          "name": "Yellow-Brown (DAK 1941)",
+          "item": "81792",
+          "productURL": "https://www.tamiya.com/english/products/81792/index.html"
+        },
+        {
+          "code": "XF-93",
+          "name": "Light Brown (DAK 1942)",
+          "item": "81793",
+          "productURL": "https://www.tamiya.com/english/products/81793/index.html"
+        }
+      ]
+    },
+    "tamiyaEnamel": {
+      "selectableCount": 79,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504020",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504020&absolutepage=2",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504020&absolutepage=3",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504020&absolutepage=4",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504020&absolutepage=5"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaEnamel-1.html",
+          "sha256": "2a40249b6468fcabc00d115c28c236a09ddafd7a86beb5b100d5c64841a9dbef"
+        },
+        {
+          "page": "tamiyaEnamel-2.html",
+          "sha256": "7e62ae663e60d1fe90c0a64d509521027e874210a7c55e16d83e0563196b39c6"
+        },
+        {
+          "page": "tamiyaEnamel-3.html",
+          "sha256": "56f835fb9e6c275a05c536bba8c10557d9ab77316e3161187c018508f3d89290"
+        },
+        {
+          "page": "tamiyaEnamel-4.html",
+          "sha256": "090c7e368fe7d07d5fc6f0df62ba58db00353c2659b48123414712285ccf7968"
+        },
+        {
+          "page": "tamiyaEnamel-5.html",
+          "sha256": "b29397987aa31b3f06abbb2214bd8bc7315dbdfdea5ae1506050e7f033b91c29"
+        }
+      ],
+      "colors": [
+        {
+          "code": "X-1",
+          "name": "Black",
+          "item": "80001",
+          "productURL": "https://www.tamiya.com/english/products/80001/index.html"
+        },
+        {
+          "code": "X-2",
+          "name": "White",
+          "item": "80002",
+          "productURL": "https://www.tamiya.com/english/products/80002/index.html"
+        },
+        {
+          "code": "X-3",
+          "name": "Royal Blue",
+          "item": "80003",
+          "productURL": "https://www.tamiya.com/english/products/80003/index.html"
+        },
+        {
+          "code": "X-4",
+          "name": "Blue",
+          "item": "80004",
+          "productURL": "https://www.tamiya.com/english/products/80004/index.html"
+        },
+        {
+          "code": "X-5",
+          "name": "Green",
+          "item": "80005",
+          "productURL": "https://www.tamiya.com/english/products/80005/index.html"
+        },
+        {
+          "code": "X-6",
+          "name": "Orange",
+          "item": "80006",
+          "productURL": "https://www.tamiya.com/english/products/80006/index.html"
+        },
+        {
+          "code": "X-7",
+          "name": "Red",
+          "item": "80007",
+          "productURL": "https://www.tamiya.com/english/products/80007/index.html"
+        },
+        {
+          "code": "X-8",
+          "name": "Lemon Yellow",
+          "item": "80008",
+          "productURL": "https://www.tamiya.com/english/products/80008/index.html"
+        },
+        {
+          "code": "X-9",
+          "name": "Brown",
+          "item": "80009",
+          "productURL": "https://www.tamiya.com/english/products/80009/index.html"
+        },
+        {
+          "code": "X-10",
+          "name": "Gun Metal",
+          "item": "80010",
+          "productURL": "https://www.tamiya.com/english/products/80010/index.html"
+        },
+        {
+          "code": "X-11",
+          "name": "Chrome Silver",
+          "item": "80011",
+          "productURL": "https://www.tamiya.com/english/products/80011/index.html"
+        },
+        {
+          "code": "X-12",
+          "name": "Gold Leaf",
+          "item": "80012",
+          "productURL": "https://www.tamiya.com/english/products/80012/index.html"
+        },
+        {
+          "code": "X-13",
+          "name": "Metallic Blue",
+          "item": "80013",
+          "productURL": "https://www.tamiya.com/english/products/80013/index.html"
+        },
+        {
+          "code": "X-14",
+          "name": "Sky Blue",
+          "item": "80014",
+          "productURL": "https://www.tamiya.com/english/products/80014/index.html"
+        },
+        {
+          "code": "X-15",
+          "name": "Light Green",
+          "item": "80015",
+          "productURL": "https://www.tamiya.com/english/products/80015/index.html"
+        },
+        {
+          "code": "X-16",
+          "name": "Purple",
+          "item": "80016",
+          "productURL": "https://www.tamiya.com/english/products/80016/index.html"
+        },
+        {
+          "code": "X-17",
+          "name": "Pink",
+          "item": "80017",
+          "productURL": "https://www.tamiya.com/english/products/80017/index.html"
+        },
+        {
+          "code": "X-18",
+          "name": "Semi-Gloss Black",
+          "item": "80018",
+          "productURL": "https://www.tamiya.com/english/products/80018/index.html"
+        },
+        {
+          "code": "X-19",
+          "name": "Smoke",
+          "item": "80019",
+          "productURL": "https://www.tamiya.com/english/products/80019/index.html"
+        },
+        {
+          "code": "X-23",
+          "name": "Clear Blue",
+          "item": "80023",
+          "productURL": "https://www.tamiya.com/english/products/80023/index.html"
+        },
+        {
+          "code": "X-24",
+          "name": "Clear Yellow",
+          "item": "80024",
+          "productURL": "https://www.tamiya.com/english/products/80024/index.html"
+        },
+        {
+          "code": "X-25",
+          "name": "Clear Green",
+          "item": "80025",
+          "productURL": "https://www.tamiya.com/english/products/80025/index.html"
+        },
+        {
+          "code": "X-26",
+          "name": "Clear Orange",
+          "item": "80026",
+          "productURL": "https://www.tamiya.com/english/products/80026/index.html"
+        },
+        {
+          "code": "X-27",
+          "name": "Clear Red",
+          "item": "80027",
+          "productURL": "https://www.tamiya.com/english/products/80027/index.html"
+        },
+        {
+          "code": "X-28",
+          "name": "Park Green",
+          "item": "80028",
+          "productURL": "https://www.tamiya.com/english/products/80028/index.html"
+        },
+        {
+          "code": "X-31",
+          "name": "Titanium Gold",
+          "item": "80031",
+          "productURL": "https://www.tamiya.com/english/products/80031/index.html"
+        },
+        {
+          "code": "X-32",
+          "name": "Titanium Silver",
+          "item": "80032",
+          "productURL": "https://www.tamiya.com/english/products/80032/index.html"
+        },
+        {
+          "code": "X-33",
+          "name": "Bronze",
+          "item": "80033",
+          "productURL": "https://www.tamiya.com/english/products/80033/index.html"
+        },
+        {
+          "code": "X-34",
+          "name": "Metallic Brown",
+          "item": "80034",
+          "productURL": "https://www.tamiya.com/english/products/80034/index.html"
+        },
+        {
+          "code": "XF-1",
+          "name": "Flat Black",
+          "item": "80301",
+          "productURL": "https://www.tamiya.com/english/products/80301/index.html"
+        },
+        {
+          "code": "XF-2",
+          "name": "Flat White",
+          "item": "80302",
+          "productURL": "https://www.tamiya.com/english/products/80302/index.html"
+        },
+        {
+          "code": "XF-3",
+          "name": "Flat Yellow",
+          "item": "80303",
+          "productURL": "https://www.tamiya.com/english/products/80303/index.html"
+        },
+        {
+          "code": "XF-4",
+          "name": "Yellow Green",
+          "item": "80304",
+          "productURL": "https://www.tamiya.com/english/products/80304/index.html"
+        },
+        {
+          "code": "XF-5",
+          "name": "Flat Green",
+          "item": "80305",
+          "productURL": "https://www.tamiya.com/english/products/80305/index.html"
+        },
+        {
+          "code": "XF-6",
+          "name": "Copper",
+          "item": "80306",
+          "productURL": "https://www.tamiya.com/english/products/80306/index.html"
+        },
+        {
+          "code": "XF-7",
+          "name": "Flat Red",
+          "item": "80307",
+          "productURL": "https://www.tamiya.com/english/products/80307/index.html"
+        },
+        {
+          "code": "XF-8",
+          "name": "Flat Blue",
+          "item": "80308",
+          "productURL": "https://www.tamiya.com/english/products/80308/index.html"
+        },
+        {
+          "code": "XF-9",
+          "name": "Hull Red",
+          "item": "80309",
+          "productURL": "https://www.tamiya.com/english/products/80309/index.html"
+        },
+        {
+          "code": "XF-10",
+          "name": "Flat Brown",
+          "item": "80310",
+          "productURL": "https://www.tamiya.com/english/products/80310/index.html"
+        },
+        {
+          "code": "XF-11",
+          "name": "J.N. Green",
+          "item": "80311",
+          "productURL": "https://www.tamiya.com/english/products/80311/index.html"
+        },
+        {
+          "code": "XF-12",
+          "name": "J.N. Grey",
+          "item": "80312",
+          "productURL": "https://www.tamiya.com/english/products/80312/index.html"
+        },
+        {
+          "code": "XF-13",
+          "name": "J.A. Green",
+          "item": "80313",
+          "productURL": "https://www.tamiya.com/english/products/80313/index.html"
+        },
+        {
+          "code": "XF-14",
+          "name": "J.A. Grey",
+          "item": "80314",
+          "productURL": "https://www.tamiya.com/english/products/80314/index.html"
+        },
+        {
+          "code": "XF-15",
+          "name": "Flat Flesh",
+          "item": "80315",
+          "productURL": "https://www.tamiya.com/english/products/80315/index.html"
+        },
+        {
+          "code": "XF-16",
+          "name": "Flat Aluminum",
+          "item": "80316",
+          "productURL": "https://www.tamiya.com/english/products/80316/index.html"
+        },
+        {
+          "code": "XF-17",
+          "name": "Sea Blue",
+          "item": "80317",
+          "productURL": "https://www.tamiya.com/english/products/80317/index.html"
+        },
+        {
+          "code": "XF-18",
+          "name": "Medium Blue",
+          "item": "80318",
+          "productURL": "https://www.tamiya.com/english/products/80318/index.html"
+        },
+        {
+          "code": "XF-19",
+          "name": "Sky Grey",
+          "item": "80319",
+          "productURL": "https://www.tamiya.com/english/products/80319/index.html"
+        },
+        {
+          "code": "XF-20",
+          "name": "Medium Grey",
+          "item": "80320",
+          "productURL": "https://www.tamiya.com/english/products/80320/index.html"
+        },
+        {
+          "code": "XF-21",
+          "name": "Sky",
+          "item": "80321",
+          "productURL": "https://www.tamiya.com/english/products/80321/index.html"
+        },
+        {
+          "code": "XF-22",
+          "name": "RLM Grey",
+          "item": "80322",
+          "productURL": "https://www.tamiya.com/english/products/80322/index.html"
+        },
+        {
+          "code": "XF-23",
+          "name": "Light Blue",
+          "item": "80323",
+          "productURL": "https://www.tamiya.com/english/products/80323/index.html"
+        },
+        {
+          "code": "XF-24",
+          "name": "Dark Grey",
+          "item": "80324",
+          "productURL": "https://www.tamiya.com/english/products/80324/index.html"
+        },
+        {
+          "code": "XF-25",
+          "name": "Light Sea Grey",
+          "item": "80325",
+          "productURL": "https://www.tamiya.com/english/products/80325/index.html"
+        },
+        {
+          "code": "XF-26",
+          "name": "Deep Green",
+          "item": "80326",
+          "productURL": "https://www.tamiya.com/english/products/80326/index.html"
+        },
+        {
+          "code": "XF-27",
+          "name": "Black Green",
+          "item": "80327",
+          "productURL": "https://www.tamiya.com/english/products/80327/index.html"
+        },
+        {
+          "code": "XF-28",
+          "name": "Dark Copper",
+          "item": "80328",
+          "productURL": "https://www.tamiya.com/english/products/80328/index.html"
+        },
+        {
+          "code": "XF-49",
+          "name": "Khaki",
+          "item": "80349",
+          "productURL": "https://www.tamiya.com/english/products/80349/index.html"
+        },
+        {
+          "code": "XF-50",
+          "name": "Field Blue",
+          "item": "80350",
+          "productURL": "https://www.tamiya.com/english/products/80350/index.html"
+        },
+        {
+          "code": "XF-51",
+          "name": "Khaki Drab",
+          "item": "80351",
+          "productURL": "https://www.tamiya.com/english/products/80351/index.html"
+        },
+        {
+          "code": "XF-52",
+          "name": "Flat Earth",
+          "item": "80352",
+          "productURL": "https://www.tamiya.com/english/products/80352/index.html"
+        },
+        {
+          "code": "XF-53",
+          "name": "Neutral Grey",
+          "item": "80353",
+          "productURL": "https://www.tamiya.com/english/products/80353/index.html"
+        },
+        {
+          "code": "XF-54",
+          "name": "Dark Sea Grey",
+          "item": "80354",
+          "productURL": "https://www.tamiya.com/english/products/80354/index.html"
+        },
+        {
+          "code": "XF-55",
+          "name": "Deck Tan",
+          "item": "80355",
+          "productURL": "https://www.tamiya.com/english/products/80355/index.html"
+        },
+        {
+          "code": "XF-56",
+          "name": "Metallic Grey",
+          "item": "80356",
+          "productURL": "https://www.tamiya.com/english/products/80356/index.html"
+        },
+        {
+          "code": "XF-57",
+          "name": "Buff",
+          "item": "80357",
+          "productURL": "https://www.tamiya.com/english/products/80357/index.html"
+        },
+        {
+          "code": "XF-58",
+          "name": "Olive Green",
+          "item": "80358",
+          "productURL": "https://www.tamiya.com/english/products/80358/index.html"
+        },
+        {
+          "code": "XF-59",
+          "name": "Desert Yellow",
+          "item": "80359",
+          "productURL": "https://www.tamiya.com/english/products/80359/index.html"
+        },
+        {
+          "code": "XF-60",
+          "name": "Dark Yellow",
+          "item": "80360",
+          "productURL": "https://www.tamiya.com/english/products/80360/index.html"
+        },
+        {
+          "code": "XF-61",
+          "name": "Dark Green",
+          "item": "80361",
+          "productURL": "https://www.tamiya.com/english/products/80361/index.html"
+        },
+        {
+          "code": "XF-62",
+          "name": "Olive Drab",
+          "item": "80362",
+          "productURL": "https://www.tamiya.com/english/products/80362/index.html"
+        },
+        {
+          "code": "XF-63",
+          "name": "German Grey",
+          "item": "80363",
+          "productURL": "https://www.tamiya.com/english/products/80363/index.html"
+        },
+        {
+          "code": "XF-64",
+          "name": "Red Brown",
+          "item": "80364",
+          "productURL": "https://www.tamiya.com/english/products/80364/index.html"
+        },
+        {
+          "code": "XF-65",
+          "name": "Field Grey",
+          "item": "80365",
+          "productURL": "https://www.tamiya.com/english/products/80365/index.html"
+        },
+        {
+          "code": "XF-66",
+          "name": "Light Grey",
+          "item": "80366",
+          "productURL": "https://www.tamiya.com/english/products/80366/index.html"
+        },
+        {
+          "code": "XF-70",
+          "name": "Dark Green 2 (IJN)",
+          "item": "80370",
+          "productURL": "https://www.tamiya.com/english/products/80370/index.html"
+        },
+        {
+          "code": "XF-71",
+          "name": "Cockpit Green (IJN)",
+          "item": "80371",
+          "productURL": "https://www.tamiya.com/english/products/80371/index.html"
+        },
+        {
+          "code": "XF-84",
+          "name": "Dark Iron",
+          "item": "80384",
+          "productURL": "https://www.tamiya.com/english/products/80384/index.html"
+        },
+        {
+          "code": "XF-85",
+          "name": "Rubber Black",
+          "item": "80385",
+          "productURL": "https://www.tamiya.com/english/products/80385/index.html"
+        }
+      ]
+    },
+    "tamiyaLacquer": {
+      "selectableCount": 79,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504005",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504005&absolutepage=2",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504005&absolutepage=3",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504005&absolutepage=4",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504005&absolutepage=5"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaLacquer-1.html",
+          "sha256": "8fa86940cd18d151d096db84d923911e169af304de86904e0ba727c98b8e3a9d"
+        },
+        {
+          "page": "tamiyaLacquer-2.html",
+          "sha256": "77be6a7f04265b1196c6b373ce1084c47ce651deebbf9b7198f454d4e0242abc"
+        },
+        {
+          "page": "tamiyaLacquer-3.html",
+          "sha256": "c16b771df62ccf6a3efbdd69b4e06ec800a99c4c9cfbb7dc7bc5d73f35359da0"
+        },
+        {
+          "page": "tamiyaLacquer-4.html",
+          "sha256": "49b833803926c9ae7d30df73956cec8d6d07887ccf6d40bf36a3ca35da3c8c53"
+        },
+        {
+          "page": "tamiyaLacquer-5.html",
+          "sha256": "599b2ca41e794c1776f4883f86ea9cde34decda851b4ea2f84c4ed2e5b42f0b1"
+        }
+      ],
+      "colors": [
+        {
+          "code": "LP-1",
+          "name": "Black",
+          "item": "82101",
+          "productURL": "https://www.tamiya.com/english/products/82101/index.html"
+        },
+        {
+          "code": "LP-2",
+          "name": "White",
+          "item": "82102",
+          "productURL": "https://www.tamiya.com/english/products/82102/index.html"
+        },
+        {
+          "code": "LP-3",
+          "name": "Flat Black",
+          "item": "82103",
+          "productURL": "https://www.tamiya.com/english/products/82103/index.html"
+        },
+        {
+          "code": "LP-4",
+          "name": "Flat White",
+          "item": "82104",
+          "productURL": "https://www.tamiya.com/english/products/82104/index.html"
+        },
+        {
+          "code": "LP-5",
+          "name": "Semi Gloss Black",
+          "item": "82105",
+          "productURL": "https://www.tamiya.com/english/products/82105/index.html"
+        },
+        {
+          "code": "LP-6",
+          "name": "Pure Blue",
+          "item": "82106",
+          "productURL": "https://www.tamiya.com/english/products/82106/index.html"
+        },
+        {
+          "code": "LP-7",
+          "name": "Pure Red",
+          "item": "82107",
+          "productURL": "https://www.tamiya.com/english/products/82107/index.html"
+        },
+        {
+          "code": "LP-8",
+          "name": "Pure Yellow",
+          "item": "82108",
+          "productURL": "https://www.tamiya.com/english/products/82108/index.html"
+        },
+        {
+          "code": "LP-11",
+          "name": "Silver",
+          "item": "82111",
+          "productURL": "https://www.tamiya.com/english/products/82111/index.html"
+        },
+        {
+          "code": "LP-12",
+          "name": "IJN Gray (Kure Arsenal)",
+          "item": "82112",
+          "productURL": "https://www.tamiya.com/english/products/82112/index.html"
+        },
+        {
+          "code": "LP-13",
+          "name": "IJN Gray (Sasebo Arsenal)",
+          "item": "82113",
+          "productURL": "https://www.tamiya.com/english/products/82113/index.html"
+        },
+        {
+          "code": "LP-14",
+          "name": "IJN Gray (Maizuru Arsenal)",
+          "item": "82114",
+          "productURL": "https://www.tamiya.com/english/products/82114/index.html"
+        },
+        {
+          "code": "LP-15",
+          "name": "IJN Gray (Yokosuka Arsenal)",
+          "item": "82115",
+          "productURL": "https://www.tamiya.com/english/products/82115/index.html"
+        },
+        {
+          "code": "LP-16",
+          "name": "Wooden Deck Tan",
+          "item": "82116",
+          "productURL": "https://www.tamiya.com/english/products/82116/index.html"
+        },
+        {
+          "code": "LP-17",
+          "name": "Linoleum Deck Brown",
+          "item": "82117",
+          "productURL": "https://www.tamiya.com/english/products/82117/index.html"
+        },
+        {
+          "code": "LP-18",
+          "name": "Dull Red",
+          "item": "82118",
+          "productURL": "https://www.tamiya.com/english/products/82118/index.html"
+        },
+        {
+          "code": "LP-19",
+          "name": "Gun Metal",
+          "item": "82119",
+          "productURL": "https://www.tamiya.com/english/products/82119/index.html"
+        },
+        {
+          "code": "LP-20",
+          "name": "Light Gun Metal",
+          "item": "82120",
+          "productURL": "https://www.tamiya.com/english/products/82120/index.html"
+        },
+        {
+          "code": "LP-21",
+          "name": "Italian Red",
+          "item": "82121",
+          "productURL": "https://www.tamiya.com/english/products/82121/index.html"
+        },
+        {
+          "code": "LP-25",
+          "name": "Brown (JGSDF)",
+          "item": "82125",
+          "productURL": "https://www.tamiya.com/english/products/82125/index.html"
+        },
+        {
+          "code": "LP-26",
+          "name": "Dark Green (JGSDF)",
+          "item": "82126",
+          "productURL": "https://www.tamiya.com/english/products/82126/index.html"
+        },
+        {
+          "code": "LP-27",
+          "name": "German Gray",
+          "item": "82127",
+          "productURL": "https://www.tamiya.com/english/products/82127/index.html"
+        },
+        {
+          "code": "LP-28",
+          "name": "Olive Drab",
+          "item": "82128",
+          "productURL": "https://www.tamiya.com/english/products/82128/index.html"
+        },
+        {
+          "code": "LP-29",
+          "name": "Olive Drab 2",
+          "item": "82129",
+          "productURL": "https://www.tamiya.com/english/products/82129/index.html"
+        },
+        {
+          "code": "LP-30",
+          "name": "Light Sand",
+          "item": "82130",
+          "productURL": "https://www.tamiya.com/english/products/82130/index.html"
+        },
+        {
+          "code": "LP-31",
+          "name": "Dark Green 2 (IJN)",
+          "item": "82131",
+          "productURL": "https://www.tamiya.com/english/products/82131/index.html"
+        },
+        {
+          "code": "LP-32",
+          "name": "Light Gray (IJN)",
+          "item": "82132",
+          "productURL": "https://www.tamiya.com/english/products/82132/index.html"
+        },
+        {
+          "code": "LP-33",
+          "name": "Gray Green (IJN)",
+          "item": "82133",
+          "productURL": "https://www.tamiya.com/english/products/82133/index.html"
+        },
+        {
+          "code": "LP-34",
+          "name": "Light Gray",
+          "item": "82134",
+          "productURL": "https://www.tamiya.com/english/products/82134/index.html"
+        },
+        {
+          "code": "LP-35",
+          "name": "Insignia White",
+          "item": "82135",
+          "productURL": "https://www.tamiya.com/english/products/82135/index.html"
+        },
+        {
+          "code": "LP-36",
+          "name": "Dark Ghost Gray",
+          "item": "82136",
+          "productURL": "https://www.tamiya.com/english/products/82136/index.html"
+        },
+        {
+          "code": "LP-37",
+          "name": "Light Ghost Gray",
+          "item": "82137",
+          "productURL": "https://www.tamiya.com/english/products/82137/index.html"
+        },
+        {
+          "code": "LP-38",
+          "name": "Flat Aluminum",
+          "item": "82138",
+          "productURL": "https://www.tamiya.com/english/products/82138/index.html"
+        },
+        {
+          "code": "LP-39",
+          "name": "Racing White",
+          "item": "82139",
+          "productURL": "https://www.tamiya.com/english/products/82139/index.html"
+        },
+        {
+          "code": "LP-40",
+          "name": "Metallic Black",
+          "item": "82140",
+          "productURL": "https://www.tamiya.com/english/products/82140/index.html"
+        },
+        {
+          "code": "LP-41",
+          "name": "Mica Blue",
+          "item": "82141",
+          "productURL": "https://www.tamiya.com/english/products/82141/index.html"
+        },
+        {
+          "code": "LP-42",
+          "name": "Mica Red",
+          "item": "82142",
+          "productURL": "https://www.tamiya.com/english/products/82142/index.html"
+        },
+        {
+          "code": "LP-43",
+          "name": "Pearl White",
+          "item": "82143",
+          "productURL": "https://www.tamiya.com/english/products/82143/index.html"
+        },
+        {
+          "code": "LP-44",
+          "name": "Metallic Orange",
+          "item": "82144",
+          "productURL": "https://www.tamiya.com/english/products/82144/index.html"
+        },
+        {
+          "code": "LP-45",
+          "name": "Racing Blue",
+          "item": "82145",
+          "productURL": "https://www.tamiya.com/english/products/82145/index.html"
+        },
+        {
+          "code": "LP-46",
+          "name": "Pure Metallic Red",
+          "item": "82146",
+          "productURL": "https://www.tamiya.com/english/products/82146/index.html"
+        },
+        {
+          "code": "LP-47",
+          "name": "Pearl Blue",
+          "item": "82147",
+          "productURL": "https://www.tamiya.com/english/products/82147/index.html"
+        },
+        {
+          "code": "LP-48",
+          "name": "Sparkling Silver",
+          "item": "82148",
+          "productURL": "https://www.tamiya.com/english/products/82148/index.html"
+        },
+        {
+          "code": "LP-50",
+          "name": "Bright Red",
+          "item": "82150",
+          "productURL": "https://www.tamiya.com/english/products/82150/index.html"
+        },
+        {
+          "code": "LP-51",
+          "name": "Pure Orange",
+          "item": "82151",
+          "productURL": "https://www.tamiya.com/english/products/82151/index.html"
+        },
+        {
+          "code": "LP-52",
+          "name": "Clear Red",
+          "item": "82152",
+          "productURL": "https://www.tamiya.com/english/products/82152/index.html"
+        },
+        {
+          "code": "LP-53",
+          "name": "Clear Orange",
+          "item": "82153",
+          "productURL": "https://www.tamiya.com/english/products/82153/index.html"
+        },
+        {
+          "code": "LP-54",
+          "name": "Dark Iron",
+          "item": "82154",
+          "productURL": "https://www.tamiya.com/english/products/82154/index.html"
+        },
+        {
+          "code": "LP-55",
+          "name": "Dark Yellow 2",
+          "item": "82155",
+          "productURL": "https://www.tamiya.com/english/products/82155/index.html"
+        },
+        {
+          "code": "LP-56",
+          "name": "Dark Green 2",
+          "item": "82156",
+          "productURL": "https://www.tamiya.com/english/products/82156/index.html"
+        },
+        {
+          "code": "LP-57",
+          "name": "Red Brown 2",
+          "item": "82157",
+          "productURL": "https://www.tamiya.com/english/products/82157/index.html"
+        },
+        {
+          "code": "LP-58",
+          "name": "NATO Green",
+          "item": "82158",
+          "productURL": "https://www.tamiya.com/english/products/82158/index.html"
+        },
+        {
+          "code": "LP-59",
+          "name": "NATO Brown",
+          "item": "82159",
+          "productURL": "https://www.tamiya.com/english/products/82159/index.html"
+        },
+        {
+          "code": "LP-60",
+          "name": "NATO Black",
+          "item": "82160",
+          "productURL": "https://www.tamiya.com/english/products/82160/index.html"
+        },
+        {
+          "code": "LP-61",
+          "name": "Metallic Gray",
+          "item": "82161",
+          "productURL": "https://www.tamiya.com/english/products/82161/index.html"
+        },
+        {
+          "code": "LP-62",
+          "name": "Titanium Gold",
+          "item": "82162",
+          "productURL": "https://www.tamiya.com/english/products/82162/index.html"
+        },
+        {
+          "code": "LP-63",
+          "name": "Titanium Silver",
+          "item": "82163",
+          "productURL": "https://www.tamiya.com/english/products/82163/index.html"
+        },
+        {
+          "code": "LP-64",
+          "name": "Olive Drab (JGSDF)",
+          "item": "82164",
+          "productURL": "https://www.tamiya.com/english/products/82164/index.html"
+        },
+        {
+          "code": "LP-65",
+          "name": "Rubber Black",
+          "item": "82165",
+          "productURL": "https://www.tamiya.com/english/products/82165/index.html"
+        },
+        {
+          "code": "LP-66",
+          "name": "Flat Flesh",
+          "item": "82166",
+          "productURL": "https://www.tamiya.com/english/products/82166/index.html"
+        },
+        {
+          "code": "LP-67",
+          "name": "Smoke",
+          "item": "82167",
+          "productURL": "https://www.tamiya.com/english/products/82167/index.html"
+        },
+        {
+          "code": "LP-68",
+          "name": "Clear Blue",
+          "item": "82168",
+          "productURL": "https://www.tamiya.com/english/products/82168/index.html"
+        },
+        {
+          "code": "LP-69",
+          "name": "Clear Yellow",
+          "item": "82169",
+          "productURL": "https://www.tamiya.com/english/products/82169/index.html"
+        },
+        {
+          "code": "LP-70",
+          "name": "Gloss Aluminum",
+          "item": "82170",
+          "productURL": "https://www.tamiya.com/english/products/82170/index.html"
+        },
+        {
+          "code": "LP-71",
+          "name": "Champagne Gold",
+          "item": "82171",
+          "productURL": "https://www.tamiya.com/english/products/82171/index.html"
+        },
+        {
+          "code": "LP-72",
+          "name": "Mica Silver",
+          "item": "82172",
+          "productURL": "https://www.tamiya.com/english/products/82172/index.html"
+        },
+        {
+          "code": "LP-73",
+          "name": "Khaki",
+          "item": "82173",
+          "productURL": "https://www.tamiya.com/english/products/82173/index.html"
+        },
+        {
+          "code": "LP-74",
+          "name": "Flat Earth",
+          "item": "82174",
+          "productURL": "https://www.tamiya.com/english/products/82174/index.html"
+        },
+        {
+          "code": "LP-75",
+          "name": "Buff",
+          "item": "82175",
+          "productURL": "https://www.tamiya.com/english/products/82175/index.html"
+        },
+        {
+          "code": "LP-76",
+          "name": "Yellow-Brown (DAK 1941)",
+          "item": "82176",
+          "productURL": "https://www.tamiya.com/english/products/82176/index.html"
+        },
+        {
+          "code": "LP-77",
+          "name": "Light Brown (DAK 1942)",
+          "item": "82177",
+          "productURL": "https://www.tamiya.com/english/products/82177/index.html"
+        },
+        {
+          "code": "LP-78",
+          "name": "Flat Blue",
+          "item": "82178",
+          "productURL": "https://www.tamiya.com/english/products/82178/index.html"
+        },
+        {
+          "code": "LP-79",
+          "name": "Flat Red",
+          "item": "82179",
+          "productURL": "https://www.tamiya.com/english/products/82179/index.html"
+        },
+        {
+          "code": "LP-80",
+          "name": "Flat Yellow",
+          "item": "82180",
+          "productURL": "https://www.tamiya.com/english/products/82180/index.html"
+        },
+        {
+          "code": "LP-81",
+          "name": "Mixing Blue",
+          "item": "82181",
+          "productURL": "https://www.tamiya.com/english/products/82181/index.html"
+        },
+        {
+          "code": "LP-82",
+          "name": "Mixing Red",
+          "item": "82182",
+          "productURL": "https://www.tamiya.com/english/products/82182/index.html"
+        },
+        {
+          "code": "LP-83",
+          "name": "Mixing Yellow",
+          "item": "82183",
+          "productURL": "https://www.tamiya.com/english/products/82183/index.html"
+        },
+        {
+          "code": "LP-84",
+          "name": "Camouflage Gray",
+          "item": "82184",
+          "productURL": "https://www.tamiya.com/english/products/82184/index.html"
+        },
+        {
+          "code": "LP-85",
+          "name": "Medium Air Gray",
+          "item": "82185",
+          "productURL": "https://www.tamiya.com/english/products/82185/index.html"
+        }
+      ]
+    },
+    "tamiyaSpray": {
+      "selectableCount": 98,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030&absolutepage=2",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030&absolutepage=3",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030&absolutepage=4",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030&absolutepage=5",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504030&absolutepage=6"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaSpray-1.html",
+          "sha256": "2f45879bdf84b41846ba17e90a2f521bf4b86e9046bc6aa4161dd4908a2d6a38"
+        },
+        {
+          "page": "tamiyaSpray-2.html",
+          "sha256": "7187fc97cf0da8a94cb1f55ee4042304772f9273218a37acb248b4af1e48de25"
+        },
+        {
+          "page": "tamiyaSpray-3.html",
+          "sha256": "0a0b79e957d912372dddc754dac6fcbff1431d13b88861525458e64eb7b3fc8b"
+        },
+        {
+          "page": "tamiyaSpray-4.html",
+          "sha256": "f5d0940527df72822973efd22b24ba1b63c64877ed8f5a7e7b8e894a6da024fd"
+        },
+        {
+          "page": "tamiyaSpray-5.html",
+          "sha256": "38491e7c3c7be9cf2c53fc5aa512ddb5109998cf0792eb4d6a6101a57a2078db"
+        },
+        {
+          "page": "tamiyaSpray-6.html",
+          "sha256": "2560a2145f6b56f7530b341ed05f2eeb4d32e1d041cb1095e61ee66cd4aa0538"
+        }
+      ],
+      "colors": [
+        {
+          "code": "TS-1",
+          "name": "Red Brown",
+          "item": "85001",
+          "productURL": "https://www.tamiya.com/english/products/85001/index.html"
+        },
+        {
+          "code": "TS-2",
+          "name": "Dark Green",
+          "item": "85002",
+          "productURL": "https://www.tamiya.com/english/products/85002/index.html"
+        },
+        {
+          "code": "TS-3",
+          "name": "Dark Yellow",
+          "item": "85003",
+          "productURL": "https://www.tamiya.com/english/products/85003/index.html"
+        },
+        {
+          "code": "TS-4",
+          "name": "German Grey",
+          "item": "85004",
+          "productURL": "https://www.tamiya.com/english/products/85004/index.html"
+        },
+        {
+          "code": "TS-5",
+          "name": "Olive Drab",
+          "item": "85005",
+          "productURL": "https://www.tamiya.com/english/products/85005/index.html"
+        },
+        {
+          "code": "TS-6",
+          "name": "Matt Black",
+          "item": "85006",
+          "productURL": "https://www.tamiya.com/english/products/85006/index.html"
+        },
+        {
+          "code": "TS-7",
+          "name": "Racing White",
+          "item": "85007",
+          "productURL": "https://www.tamiya.com/english/products/85007/index.html"
+        },
+        {
+          "code": "TS-8",
+          "name": "Italian Red",
+          "item": "85008",
+          "productURL": "https://www.tamiya.com/english/products/85008/index.html"
+        },
+        {
+          "code": "TS-9",
+          "name": "British Green",
+          "item": "85009",
+          "productURL": "https://www.tamiya.com/english/products/85009/index.html"
+        },
+        {
+          "code": "TS-10",
+          "name": "French Blue",
+          "item": "85010",
+          "productURL": "https://www.tamiya.com/english/products/85010/index.html"
+        },
+        {
+          "code": "TS-11",
+          "name": "Maroon",
+          "item": "85011",
+          "productURL": "https://www.tamiya.com/english/products/85011/index.html"
+        },
+        {
+          "code": "TS-12",
+          "name": "Orange",
+          "item": "85012",
+          "productURL": "https://www.tamiya.com/english/products/85012/index.html"
+        },
+        {
+          "code": "TS-14",
+          "name": "Black",
+          "item": "85014",
+          "productURL": "https://www.tamiya.com/english/products/85014/index.html"
+        },
+        {
+          "code": "TS-15",
+          "name": "Blue",
+          "item": "85015",
+          "productURL": "https://www.tamiya.com/english/products/85015/index.html"
+        },
+        {
+          "code": "TS-16",
+          "name": "Yellow",
+          "item": "85016",
+          "productURL": "https://www.tamiya.com/english/products/85016/index.html"
+        },
+        {
+          "code": "TS-17",
+          "name": "Gloss Aluminum",
+          "item": "85017",
+          "productURL": "https://www.tamiya.com/english/products/85017/index.html"
+        },
+        {
+          "code": "TS-18",
+          "name": "Metallic Red",
+          "item": "85018",
+          "productURL": "https://www.tamiya.com/english/products/85018/index.html"
+        },
+        {
+          "code": "TS-19",
+          "name": "Metallic Blue",
+          "item": "85019",
+          "productURL": "https://www.tamiya.com/english/products/85019/index.html"
+        },
+        {
+          "code": "TS-20",
+          "name": "Metallic Green",
+          "item": "85020",
+          "productURL": "https://www.tamiya.com/english/products/85020/index.html"
+        },
+        {
+          "code": "TS-21",
+          "name": "Gold",
+          "item": "85021",
+          "productURL": "https://www.tamiya.com/english/products/85021/index.html"
+        },
+        {
+          "code": "TS-22",
+          "name": "Light Green",
+          "item": "85022",
+          "productURL": "https://www.tamiya.com/english/products/85022/index.html"
+        },
+        {
+          "code": "TS-23",
+          "name": "Light Blue",
+          "item": "85023",
+          "productURL": "https://www.tamiya.com/english/products/85023/index.html"
+        },
+        {
+          "code": "TS-24",
+          "name": "Purple",
+          "item": "85024",
+          "productURL": "https://www.tamiya.com/english/products/85024/index.html"
+        },
+        {
+          "code": "TS-25",
+          "name": "Pink",
+          "item": "85025",
+          "productURL": "https://www.tamiya.com/english/products/85025/index.html"
+        },
+        {
+          "code": "TS-26",
+          "name": "Pure White",
+          "item": "85026",
+          "productURL": "https://www.tamiya.com/english/products/85026/index.html"
+        },
+        {
+          "code": "TS-27",
+          "name": "Matt White",
+          "item": "85027",
+          "productURL": "https://www.tamiya.com/english/products/85027/index.html"
+        },
+        {
+          "code": "TS-28",
+          "name": "Olive Drab 2",
+          "item": "85028",
+          "productURL": "https://www.tamiya.com/english/products/85028/index.html"
+        },
+        {
+          "code": "TS-29",
+          "name": "Semi-Gloss Black",
+          "item": "85029",
+          "productURL": "https://www.tamiya.com/english/products/85029/index.html"
+        },
+        {
+          "code": "TS-30",
+          "name": "Silver Leaf",
+          "item": "85030",
+          "productURL": "https://www.tamiya.com/english/products/85030/index.html"
+        },
+        {
+          "code": "TS-31",
+          "name": "Bright Orange",
+          "item": "85031",
+          "productURL": "https://www.tamiya.com/english/products/85031/index.html"
+        },
+        {
+          "code": "TS-32",
+          "name": "Haze Grey",
+          "item": "85032",
+          "productURL": "https://www.tamiya.com/english/products/85032/index.html"
+        },
+        {
+          "code": "TS-33",
+          "name": "Dull Red",
+          "item": "85033",
+          "productURL": "https://www.tamiya.com/english/products/85033/index.html"
+        },
+        {
+          "code": "TS-34",
+          "name": "Camel Yellow",
+          "item": "85034",
+          "productURL": "https://www.tamiya.com/english/products/85034/index.html"
+        },
+        {
+          "code": "TS-35",
+          "name": "Park Green",
+          "item": "85035",
+          "productURL": "https://www.tamiya.com/english/products/85035/index.html"
+        },
+        {
+          "code": "TS-36",
+          "name": "Fluorescent Red",
+          "item": "85036",
+          "productURL": "https://www.tamiya.com/english/products/85036/index.html"
+        },
+        {
+          "code": "TS-37",
+          "name": "Lavender",
+          "item": "85037",
+          "productURL": "https://www.tamiya.com/english/products/85037/index.html"
+        },
+        {
+          "code": "TS-38",
+          "name": "Gun Metal",
+          "item": "85038",
+          "productURL": "https://www.tamiya.com/english/products/85038/index.html"
+        },
+        {
+          "code": "TS-39",
+          "name": "Mica Red",
+          "item": "85039",
+          "productURL": "https://www.tamiya.com/english/products/85039/index.html"
+        },
+        {
+          "code": "TS-40",
+          "name": "Metallic Black",
+          "item": "85040",
+          "productURL": "https://www.tamiya.com/english/products/85040/index.html"
+        },
+        {
+          "code": "TS-41",
+          "name": "Coral Blue",
+          "item": "85041",
+          "productURL": "https://www.tamiya.com/english/products/85041/index.html"
+        },
+        {
+          "code": "TS-42",
+          "name": "Light Gun Metal",
+          "item": "85042",
+          "productURL": "https://www.tamiya.com/english/products/85042/index.html"
+        },
+        {
+          "code": "TS-43",
+          "name": "Racing Green",
+          "item": "85043",
+          "productURL": "https://www.tamiya.com/english/products/85043/index.html"
+        },
+        {
+          "code": "TS-44",
+          "name": "Brilliant Blue",
+          "item": "85044",
+          "productURL": "https://www.tamiya.com/english/products/85044/index.html"
+        },
+        {
+          "code": "TS-45",
+          "name": "Pearl White",
+          "item": "85045",
+          "productURL": "https://www.tamiya.com/english/products/85045/index.html"
+        },
+        {
+          "code": "TS-46",
+          "name": "Light Sand",
+          "item": "85046",
+          "productURL": "https://www.tamiya.com/english/products/85046/index.html"
+        },
+        {
+          "code": "TS-47",
+          "name": "Chrome Yellow",
+          "item": "85047",
+          "productURL": "https://www.tamiya.com/english/products/85047/index.html"
+        },
+        {
+          "code": "TS-48",
+          "name": "Gunship Grey",
+          "item": "85048",
+          "productURL": "https://www.tamiya.com/english/products/85048/index.html"
+        },
+        {
+          "code": "TS-49",
+          "name": "Bright Red",
+          "item": "85049",
+          "productURL": "https://www.tamiya.com/english/products/85049/index.html"
+        },
+        {
+          "code": "TS-50",
+          "name": "Mica Blue",
+          "item": "85050",
+          "productURL": "https://www.tamiya.com/english/products/85050/index.html"
+        },
+        {
+          "code": "TS-51",
+          "name": "Racing Blue",
+          "item": "85051",
+          "productURL": "https://www.tamiya.com/english/products/85051/index.html"
+        },
+        {
+          "code": "TS-52",
+          "name": "Candy Lime Green",
+          "item": "85052",
+          "productURL": "https://www.tamiya.com/english/products/85052/index.html"
+        },
+        {
+          "code": "TS-53",
+          "name": "Deep Metallic Blue",
+          "item": "85053",
+          "productURL": "https://www.tamiya.com/english/products/85053/index.html"
+        },
+        {
+          "code": "TS-54",
+          "name": "Light Metallic Blue",
+          "item": "85054",
+          "productURL": "https://www.tamiya.com/english/products/85054/index.html"
+        },
+        {
+          "code": "TS-55",
+          "name": "Dark Blue",
+          "item": "85055",
+          "productURL": "https://www.tamiya.com/english/products/85055/index.html"
+        },
+        {
+          "code": "TS-56",
+          "name": "Brilliant Orange",
+          "item": "85056",
+          "productURL": "https://www.tamiya.com/english/products/85056/index.html"
+        },
+        {
+          "code": "TS-57",
+          "name": "Blue Violet",
+          "item": "85057",
+          "productURL": "https://www.tamiya.com/english/products/85057/index.html"
+        },
+        {
+          "code": "TS-58",
+          "name": "Pearl Light Blue",
+          "item": "85058",
+          "productURL": "https://www.tamiya.com/english/products/85058/index.html"
+        },
+        {
+          "code": "TS-59",
+          "name": "Pearl Light Red",
+          "item": "85059",
+          "productURL": "https://www.tamiya.com/english/products/85059/index.html"
+        },
+        {
+          "code": "TS-60",
+          "name": "Pearl Green",
+          "item": "85060",
+          "productURL": "https://www.tamiya.com/english/products/85060/index.html"
+        },
+        {
+          "code": "TS-61",
+          "name": "NATO Green",
+          "item": "85061",
+          "productURL": "https://www.tamiya.com/english/products/85061/index.html"
+        },
+        {
+          "code": "TS-62",
+          "name": "NATO Brown",
+          "item": "85062",
+          "productURL": "https://www.tamiya.com/english/products/85062/index.html"
+        },
+        {
+          "code": "TS-63",
+          "name": "NATO Black",
+          "item": "85063",
+          "productURL": "https://www.tamiya.com/english/products/85063/index.html"
+        },
+        {
+          "code": "TS-64",
+          "name": "Dark Mica Blue",
+          "item": "85064",
+          "productURL": "https://www.tamiya.com/english/products/85064/index.html"
+        },
+        {
+          "code": "TS-66",
+          "name": "IJN Gray (Kure Arsenal)",
+          "item": "85066",
+          "productURL": "https://www.tamiya.com/english/products/85066/index.html"
+        },
+        {
+          "code": "TS-67",
+          "name": "IJN Gray (Sasebo Arsenal)",
+          "item": "85067",
+          "productURL": "https://www.tamiya.com/english/products/85067/index.html"
+        },
+        {
+          "code": "TS-68",
+          "name": "Wooden Deck Tan",
+          "item": "85068",
+          "productURL": "https://www.tamiya.com/english/products/85068/index.html"
+        },
+        {
+          "code": "TS-69",
+          "name": "Linoleum Deck Brown",
+          "item": "85069",
+          "productURL": "https://www.tamiya.com/english/products/85069/index.html"
+        },
+        {
+          "code": "TS-70",
+          "name": "Olive Drab (JGSDF)",
+          "item": "85070",
+          "productURL": "https://www.tamiya.com/english/products/85070/index.html"
+        },
+        {
+          "code": "TS-71",
+          "name": "Smoke",
+          "item": "85071",
+          "productURL": "https://www.tamiya.com/english/products/85071/index.html"
+        },
+        {
+          "code": "TS-72",
+          "name": "Clear Blue",
+          "item": "85072",
+          "productURL": "https://www.tamiya.com/english/products/85072/index.html"
+        },
+        {
+          "code": "TS-73",
+          "name": "Clear Orange",
+          "item": "85073",
+          "productURL": "https://www.tamiya.com/english/products/85073/index.html"
+        },
+        {
+          "code": "TS-74",
+          "name": "Clear Red",
+          "item": "85074",
+          "productURL": "https://www.tamiya.com/english/products/85074/index.html"
+        },
+        {
+          "code": "TS-75",
+          "name": "Champagne Gold",
+          "item": "85075",
+          "productURL": "https://www.tamiya.com/english/products/85075/index.html"
+        },
+        {
+          "code": "TS-76",
+          "name": "Mica Silver",
+          "item": "85076",
+          "productURL": "https://www.tamiya.com/english/products/85076/index.html"
+        },
+        {
+          "code": "TS-77",
+          "name": "Flat Flesh",
+          "item": "85077",
+          "productURL": "https://www.tamiya.com/english/products/85077/index.html"
+        },
+        {
+          "code": "TS-78",
+          "name": "Field Gray",
+          "item": "85078",
+          "productURL": "https://www.tamiya.com/english/products/85078/index.html"
+        },
+        {
+          "code": "TS-81",
+          "name": "Royal Light Gray",
+          "item": "85081",
+          "productURL": "https://www.tamiya.com/english/products/85081/index.html"
+        },
+        {
+          "code": "TS-82",
+          "name": "Rubber Black",
+          "item": "85082",
+          "productURL": "https://www.tamiya.com/english/products/85082/index.html"
+        },
+        {
+          "code": "TS-83",
+          "name": "Metallic Silver",
+          "item": "85083",
+          "productURL": "https://www.tamiya.com/english/products/85083/index.html"
+        },
+        {
+          "code": "TS-84",
+          "name": "Metallic Gold",
+          "item": "85084",
+          "productURL": "https://www.tamiya.com/english/products/85084/index.html"
+        },
+        {
+          "code": "TS-85",
+          "name": "Bright Mica Red",
+          "item": "85085",
+          "productURL": "https://www.tamiya.com/english/products/85085/index.html"
+        },
+        {
+          "code": "TS-86",
+          "name": "Pure Red",
+          "item": "85086",
+          "productURL": "https://www.tamiya.com/english/products/85086/index.html"
+        },
+        {
+          "code": "TS-87",
+          "name": "Titanium Gold",
+          "item": "85087",
+          "productURL": "https://www.tamiya.com/english/products/85087/index.html"
+        },
+        {
+          "code": "TS-88",
+          "name": "Titanium Silver",
+          "item": "85088",
+          "productURL": "https://www.tamiya.com/english/products/85088/index.html"
+        },
+        {
+          "code": "TS-89",
+          "name": "Pearl Blue",
+          "item": "85089",
+          "productURL": "https://www.tamiya.com/english/products/85089/index.html"
+        },
+        {
+          "code": "TS-90",
+          "name": "Brown (JGSDF)",
+          "item": "85090",
+          "productURL": "https://www.tamiya.com/english/products/85090/index.html"
+        },
+        {
+          "code": "TS-91",
+          "name": "Dark Green (JGSDF)",
+          "item": "85091",
+          "productURL": "https://www.tamiya.com/english/products/85091/index.html"
+        },
+        {
+          "code": "TS-92",
+          "name": "Metallic Orange",
+          "item": "85092",
+          "productURL": "https://www.tamiya.com/english/products/85092/index.html"
+        },
+        {
+          "code": "TS-93",
+          "name": "Pure Blue",
+          "item": "85093",
+          "productURL": "https://www.tamiya.com/english/products/85093/index.html"
+        },
+        {
+          "code": "TS-94",
+          "name": "Metallic Gray",
+          "item": "85094",
+          "productURL": "https://www.tamiya.com/english/products/85094/index.html"
+        },
+        {
+          "code": "TS-95",
+          "name": "Pure Metallic Red",
+          "item": "85095",
+          "productURL": "https://www.tamiya.com/english/products/85095/index.html"
+        },
+        {
+          "code": "TS-96",
+          "name": "Fluorescent Orange",
+          "item": "85096",
+          "productURL": "https://www.tamiya.com/english/products/85096/index.html"
+        },
+        {
+          "code": "TS-97",
+          "name": "Pearl Yellow",
+          "item": "85097",
+          "productURL": "https://www.tamiya.com/english/products/85097/index.html"
+        },
+        {
+          "code": "TS-98",
+          "name": "Pure Orange",
+          "item": "85098",
+          "productURL": "https://www.tamiya.com/english/products/85098/index.html"
+        },
+        {
+          "code": "TS-99",
+          "name": "IJN Gray (Maizuru Arsenal)",
+          "item": "85099",
+          "productURL": "https://www.tamiya.com/english/products/85099/index.html"
+        },
+        {
+          "code": "TS-100",
+          "name": "Semi-Gloss Bright Gun Metal",
+          "item": "85100",
+          "productURL": "https://www.tamiya.com/english/products/85100/index.html"
+        },
+        {
+          "code": "TS-101",
+          "name": "Base White",
+          "item": "85101",
+          "productURL": "https://www.tamiya.com/english/products/85101/index.html"
+        },
+        {
+          "code": "TS-102",
+          "name": "Cobalt Green",
+          "item": "85102",
+          "productURL": "https://www.tamiya.com/english/products/85102/index.html"
+        }
+      ]
+    },
+    "tamiyaAircraft": {
+      "selectableCount": 33,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504050",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504050&absolutepage=2"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaAircraft-1.html",
+          "sha256": "8738ff394e4dbd5369078ec90313457cb1af49175d2fcf9343056597e4b62e92"
+        },
+        {
+          "page": "tamiyaAircraft-2.html",
+          "sha256": "ac15f5abe058c5312f32547859070b2fc43de28b7aac34759cadc7e4f6e64be4"
+        }
+      ],
+      "colors": [
+        {
+          "code": "AS-1",
+          "name": "Dark Green (IJN)",
+          "item": "86501",
+          "productURL": "https://www.tamiya.com/english/products/86501/index.html"
+        },
+        {
+          "code": "AS-2",
+          "name": "Light Gray (IJN)",
+          "item": "86502",
+          "productURL": "https://www.tamiya.com/english/products/86502/index.html"
+        },
+        {
+          "code": "AS-3",
+          "name": "Gray Green (Luftwaffe)",
+          "item": "86503",
+          "productURL": "https://www.tamiya.com/english/products/86503/index.html"
+        },
+        {
+          "code": "AS-4",
+          "name": "Gray Violet (Luftwaffe)",
+          "item": "86504",
+          "productURL": "https://www.tamiya.com/english/products/86504/index.html"
+        },
+        {
+          "code": "AS-5",
+          "name": "Light Blue (Luftwaffe)",
+          "item": "86505",
+          "productURL": "https://www.tamiya.com/english/products/86505/index.html"
+        },
+        {
+          "code": "AS-6",
+          "name": "Olive Drab",
+          "item": "86506",
+          "productURL": "https://www.tamiya.com/english/products/86506/index.html"
+        },
+        {
+          "code": "AS-7",
+          "name": "Neutral Gray",
+          "item": "86507",
+          "productURL": "https://www.tamiya.com/english/products/86507/index.html"
+        },
+        {
+          "code": "AS-8",
+          "name": "Navy Blue",
+          "item": "86508",
+          "productURL": "https://www.tamiya.com/english/products/86508/index.html"
+        },
+        {
+          "code": "AS-9",
+          "name": "Dark Green (RAF)",
+          "item": "86509",
+          "productURL": "https://www.tamiya.com/english/products/86509/index.html"
+        },
+        {
+          "code": "AS-10",
+          "name": "Ocean Grey (RAF)",
+          "item": "86510",
+          "productURL": "https://www.tamiya.com/english/products/86510/index.html"
+        },
+        {
+          "code": "AS-11",
+          "name": "Medium Sea Grey (RAF)",
+          "item": "86511",
+          "productURL": "https://www.tamiya.com/english/products/86511/index.html"
+        },
+        {
+          "code": "AS-12",
+          "name": "Bare-Metal Silver",
+          "item": "86512",
+          "productURL": "https://www.tamiya.com/english/products/86512/index.html"
+        },
+        {
+          "code": "AS-13",
+          "name": "Green",
+          "item": "86513",
+          "productURL": "https://www.tamiya.com/english/products/86513/index.html"
+        },
+        {
+          "code": "AS-14",
+          "name": "Olive Green",
+          "item": "86514",
+          "productURL": "https://www.tamiya.com/english/products/86514/index.html"
+        },
+        {
+          "code": "AS-15",
+          "name": "Tan",
+          "item": "86515",
+          "productURL": "https://www.tamiya.com/english/products/86515/index.html"
+        },
+        {
+          "code": "AS-16",
+          "name": "Light Gray",
+          "item": "86516",
+          "productURL": "https://www.tamiya.com/english/products/86516/index.html"
+        },
+        {
+          "code": "AS-17",
+          "name": "Dark Green(IJA)",
+          "item": "86517",
+          "productURL": "https://www.tamiya.com/english/products/86517/index.html"
+        },
+        {
+          "code": "AS-18",
+          "name": "Light Gray(IJA)",
+          "item": "86518",
+          "productURL": "https://www.tamiya.com/english/products/86518/index.html"
+        },
+        {
+          "code": "AS-19",
+          "name": "Intermediate Blue",
+          "item": "86519",
+          "productURL": "https://www.tamiya.com/english/products/86519/index.html"
+        },
+        {
+          "code": "AS-20",
+          "name": "Insignia White",
+          "item": "86520",
+          "productURL": "https://www.tamiya.com/english/products/86520/index.html"
+        },
+        {
+          "code": "AS-21",
+          "name": "Dark Green 2 (IJN)",
+          "item": "86521",
+          "productURL": "https://www.tamiya.com/english/products/86521/index.html"
+        },
+        {
+          "code": "AS-22",
+          "name": "Dark Earth",
+          "item": "86522",
+          "productURL": "https://www.tamiya.com/english/products/86522/index.html"
+        },
+        {
+          "code": "AS-23",
+          "name": "Light Green (Luftwaffe)",
+          "item": "86523",
+          "productURL": "https://www.tamiya.com/english/products/86523/index.html"
+        },
+        {
+          "code": "AS-24",
+          "name": "Dark Green (Luftwaffe)",
+          "item": "86524",
+          "productURL": "https://www.tamiya.com/english/products/86524/index.html"
+        },
+        {
+          "code": "AS-25",
+          "name": "Dark Ghost Grey",
+          "item": "86525",
+          "productURL": "https://www.tamiya.com/english/products/86525/index.html"
+        },
+        {
+          "code": "AS-26",
+          "name": "Light Ghost Grey",
+          "item": "86526",
+          "productURL": "https://www.tamiya.com/english/products/86526/index.html"
+        },
+        {
+          "code": "AS-27",
+          "name": "Gunship Gray 2",
+          "item": "86527",
+          "productURL": "https://www.tamiya.com/english/products/86527/index.html"
+        },
+        {
+          "code": "AS-28",
+          "name": "Medium Gray",
+          "item": "86528",
+          "productURL": "https://www.tamiya.com/english/products/86528/index.html"
+        },
+        {
+          "code": "AS-29",
+          "name": "Gray Green (IJN)",
+          "item": "86529",
+          "productURL": "https://www.tamiya.com/english/products/86529/index.html"
+        },
+        {
+          "code": "AS-30",
+          "name": "Dark Green 2 (RAF)",
+          "item": "86530",
+          "productURL": "https://www.tamiya.com/english/products/86530/index.html"
+        },
+        {
+          "code": "AS-31",
+          "name": "Ocean Gray 2 (RAF)",
+          "item": "86531",
+          "productURL": "https://www.tamiya.com/english/products/86531/index.html"
+        },
+        {
+          "code": "AS-32",
+          "name": "Medium Sea Gray 2 (RAF)",
+          "item": "86532",
+          "productURL": "https://www.tamiya.com/english/products/86532/index.html"
+        },
+        {
+          "code": "AS-33",
+          "name": "Camouflage Gray",
+          "item": "86533",
+          "productURL": "https://www.tamiya.com/english/products/86533/index.html"
+        }
+      ]
+    },
+    "tamiyaPolycarbonate": {
+      "selectableCount": 60,
+      "catalogURLs": [
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504060",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504060&absolutepage=2",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504060&absolutepage=3",
+        "https://www.tamiya.com/english/products/list.html?genre_item=e_504060&absolutepage=4"
+      ],
+      "catalogPageHashes": [
+        {
+          "page": "tamiyaPolycarbonate-1.html",
+          "sha256": "5b32dbf474a9859c4c8ae3606538208078df8407f9f0b7469c21888930717620"
+        },
+        {
+          "page": "tamiyaPolycarbonate-2.html",
+          "sha256": "cd6bbee73d629aa4561dc7bde2f63d57a7a6f98b251725a698d755a03d6d058f"
+        },
+        {
+          "page": "tamiyaPolycarbonate-3.html",
+          "sha256": "d270d4cb6a7d50409d9415ab3d4a5d53fbb9b17c16a49106cfb542df1a50a863"
+        },
+        {
+          "page": "tamiyaPolycarbonate-4.html",
+          "sha256": "565d432615099be2ef27506ffcd31830a816e73d06416875ff47159ff3206aef"
+        }
+      ],
+      "colors": [
+        {
+          "code": "69944",
+          "name": "PS Dark Blue (Special Edition)",
+          "item": "69944",
+          "productURL": "https://www.tamiya.com/japan/products/69944/index.html"
+        },
+        {
+          "code": "PS-1",
+          "name": "White",
+          "item": "86001",
+          "productURL": "https://www.tamiya.com/english/products/86001/index.html"
+        },
+        {
+          "code": "PS-2",
+          "name": "Red",
+          "item": "86002",
+          "productURL": "https://www.tamiya.com/english/products/86002/index.html"
+        },
+        {
+          "code": "PS-3",
+          "name": "Light Blue",
+          "item": "86003",
+          "productURL": "https://www.tamiya.com/english/products/86003/index.html"
+        },
+        {
+          "code": "PS-4",
+          "name": "Blue",
+          "item": "86004",
+          "productURL": "https://www.tamiya.com/english/products/86004/index.html"
+        },
+        {
+          "code": "PS-5",
+          "name": "Black",
+          "item": "86005",
+          "productURL": "https://www.tamiya.com/english/products/86005/index.html"
+        },
+        {
+          "code": "PS-6",
+          "name": "Yellow",
+          "item": "86006",
+          "productURL": "https://www.tamiya.com/english/products/86006/index.html"
+        },
+        {
+          "code": "PS-7",
+          "name": "Orange",
+          "item": "86007",
+          "productURL": "https://www.tamiya.com/english/products/86007/index.html"
+        },
+        {
+          "code": "PS-8",
+          "name": "Light Green",
+          "item": "86008",
+          "productURL": "https://www.tamiya.com/english/products/86008/index.html"
+        },
+        {
+          "code": "PS-9",
+          "name": "Green",
+          "item": "86009",
+          "productURL": "https://www.tamiya.com/english/products/86009/index.html"
+        },
+        {
+          "code": "PS-10",
+          "name": "Purple",
+          "item": "86010",
+          "productURL": "https://www.tamiya.com/english/products/86010/index.html"
+        },
+        {
+          "code": "PS-11",
+          "name": "Pink",
+          "item": "86011",
+          "productURL": "https://www.tamiya.com/english/products/86011/index.html"
+        },
+        {
+          "code": "PS-12",
+          "name": "Silver",
+          "item": "86012",
+          "productURL": "https://www.tamiya.com/english/products/86012/index.html"
+        },
+        {
+          "code": "PS-13",
+          "name": "Gold",
+          "item": "86013",
+          "productURL": "https://www.tamiya.com/english/products/86013/index.html"
+        },
+        {
+          "code": "PS-14",
+          "name": "Copper",
+          "item": "86014",
+          "productURL": "https://www.tamiya.com/english/products/86014/index.html"
+        },
+        {
+          "code": "PS-15",
+          "name": "Metallic Red",
+          "item": "86015",
+          "productURL": "https://www.tamiya.com/english/products/86015/index.html"
+        },
+        {
+          "code": "PS-16",
+          "name": "Metallic Blue",
+          "item": "86016",
+          "productURL": "https://www.tamiya.com/english/products/86016/index.html"
+        },
+        {
+          "code": "PS-17",
+          "name": "Metallic Green",
+          "item": "86017",
+          "productURL": "https://www.tamiya.com/english/products/86017/index.html"
+        },
+        {
+          "code": "PS-18",
+          "name": "Metallic Purple",
+          "item": "86018",
+          "productURL": "https://www.tamiya.com/english/products/86018/index.html"
+        },
+        {
+          "code": "PS-19",
+          "name": "Camel Yellow",
+          "item": "86019",
+          "productURL": "https://www.tamiya.com/english/products/86019/index.html"
+        },
+        {
+          "code": "PS-20",
+          "name": "Fluorescent Red",
+          "item": "86020",
+          "productURL": "https://www.tamiya.com/english/products/86020/index.html"
+        },
+        {
+          "code": "PS-21",
+          "name": "Park Green",
+          "item": "86021",
+          "productURL": "https://www.tamiya.com/english/products/86021/index.html"
+        },
+        {
+          "code": "PS-22",
+          "name": "Racing Green",
+          "item": "86022",
+          "productURL": "https://www.tamiya.com/english/products/86022/index.html"
+        },
+        {
+          "code": "PS-23",
+          "name": "Gun Metal",
+          "item": "86023",
+          "productURL": "https://www.tamiya.com/english/products/86023/index.html"
+        },
+        {
+          "code": "PS-24",
+          "name": "Fluorescent Orange",
+          "item": "86024",
+          "productURL": "https://www.tamiya.com/english/products/86024/index.html"
+        },
+        {
+          "code": "PS-25",
+          "name": "Bright Green",
+          "item": "86025",
+          "productURL": "https://www.tamiya.com/english/products/86025/index.html"
+        },
+        {
+          "code": "PS-27",
+          "name": "Fluorescent Yellow",
+          "item": "86027",
+          "productURL": "https://www.tamiya.com/english/products/86027/index.html"
+        },
+        {
+          "code": "PS-28",
+          "name": "Fluorescent Green",
+          "item": "86028",
+          "productURL": "https://www.tamiya.com/english/products/86028/index.html"
+        },
+        {
+          "code": "PS-29",
+          "name": "Fluorescent Pink",
+          "item": "86029",
+          "productURL": "https://www.tamiya.com/english/products/86029/index.html"
+        },
+        {
+          "code": "PS-30",
+          "name": "Brilliant Blue",
+          "item": "86030",
+          "productURL": "https://www.tamiya.com/english/products/86030/index.html"
+        },
+        {
+          "code": "PS-31",
+          "name": "Smoke",
+          "item": "86031",
+          "productURL": "https://www.tamiya.com/english/products/86031/index.html"
+        },
+        {
+          "code": "PS-32",
+          "name": "Corsa Gray",
+          "item": "86032",
+          "productURL": "https://www.tamiya.com/english/products/86032/index.html"
+        },
+        {
+          "code": "PS-33",
+          "name": "Cherry Red",
+          "item": "86033",
+          "productURL": "https://www.tamiya.com/english/products/86033/index.html"
+        },
+        {
+          "code": "PS-34",
+          "name": "Bright Red",
+          "item": "86034",
+          "productURL": "https://www.tamiya.com/english/products/86034/index.html"
+        },
+        {
+          "code": "PS-35",
+          "name": "Blue Violet",
+          "item": "86035",
+          "productURL": "https://www.tamiya.com/english/products/86035/index.html"
+        },
+        {
+          "code": "PS-36",
+          "name": "Translucent Silver",
+          "item": "86036",
+          "productURL": "https://www.tamiya.com/english/products/86036/index.html"
+        },
+        {
+          "code": "PS-37",
+          "name": "Translucent Red",
+          "item": "86037",
+          "productURL": "https://www.tamiya.com/english/products/86037/index.html"
+        },
+        {
+          "code": "PS-38",
+          "name": "Translucent Blue",
+          "item": "86038",
+          "productURL": "https://www.tamiya.com/english/products/86038/index.html"
+        },
+        {
+          "code": "PS-39",
+          "name": "Translucent Light Blue",
+          "item": "86039",
+          "productURL": "https://www.tamiya.com/english/products/86039/index.html"
+        },
+        {
+          "code": "PS-40",
+          "name": "Translucent Pink",
+          "item": "86040",
+          "productURL": "https://www.tamiya.com/english/products/86040/index.html"
+        },
+        {
+          "code": "PS-41",
+          "name": "Bright Silver",
+          "item": "86041",
+          "productURL": "https://www.tamiya.com/english/products/86041/index.html"
+        },
+        {
+          "code": "PS-42",
+          "name": "Translucent Yellow",
+          "item": "86042",
+          "productURL": "https://www.tamiya.com/english/products/86042/index.html"
+        },
+        {
+          "code": "PS-43",
+          "name": "Translucent Orange",
+          "item": "86043",
+          "productURL": "https://www.tamiya.com/english/products/86043/index.html"
+        },
+        {
+          "code": "PS-44",
+          "name": "Translucent Green",
+          "item": "86044",
+          "productURL": "https://www.tamiya.com/english/products/86044/index.html"
+        },
+        {
+          "code": "PS-45",
+          "name": "Translucent Purple",
+          "item": "86045",
+          "productURL": "https://www.tamiya.com/english/products/86045/index.html"
+        },
+        {
+          "code": "PS-46",
+          "name": "Iridescent Purple/Green",
+          "item": "86046",
+          "productURL": "https://www.tamiya.com/english/products/86046/index.html"
+        },
+        {
+          "code": "PS-47",
+          "name": "Iridescent Pink/Gold",
+          "item": "86047",
+          "productURL": "https://www.tamiya.com/english/products/86047/index.html"
+        },
+        {
+          "code": "PS-48",
+          "name": "Semi-Gloss Silver Anodized Aluminum",
+          "item": "86048",
+          "productURL": "https://www.tamiya.com/english/products/86048/index.html"
+        },
+        {
+          "code": "PS-49",
+          "name": "Sky Blue Anodized Aluminum",
+          "item": "86049",
+          "productURL": "https://www.tamiya.com/english/products/86049/index.html"
+        },
+        {
+          "code": "PS-50",
+          "name": "Sparkling Pink Anodized Aluminum",
+          "item": "86050",
+          "productURL": "https://www.tamiya.com/english/products/86050/index.html"
+        },
+        {
+          "code": "PS-51",
+          "name": "Purple Anodized Aluminum",
+          "item": "86051",
+          "productURL": "https://www.tamiya.com/english/products/86051/index.html"
+        },
+        {
+          "code": "PS-52",
+          "name": "Champagne Gold Anodized Aluminum",
+          "item": "86052",
+          "productURL": "https://www.tamiya.com/english/products/86052/index.html"
+        },
+        {
+          "code": "PS-54",
+          "name": "Cobalt Green",
+          "item": "86054",
+          "productURL": "https://www.tamiya.com/english/products/86054/index.html"
+        },
+        {
+          "code": "PS-56",
+          "name": "Mustard Yellow",
+          "item": "86056",
+          "productURL": "https://www.tamiya.com/english/products/86056/index.html"
+        },
+        {
+          "code": "PS-57",
+          "name": "Pearl White",
+          "item": "86057",
+          "productURL": "https://www.tamiya.com/english/products/86057/index.html"
+        },
+        {
+          "code": "PS-59",
+          "name": "Dark Metallic Blue",
+          "item": "86059",
+          "productURL": "https://www.tamiya.com/english/products/86059/index.html"
+        },
+        {
+          "code": "PS-60",
+          "name": "Bright Mica Red",
+          "item": "86060",
+          "productURL": "https://www.tamiya.com/english/products/86060/index.html"
+        },
+        {
+          "code": "PS-61",
+          "name": "Metallic Orange",
+          "item": "86061",
+          "productURL": "https://www.tamiya.com/english/products/86061/index.html"
+        },
+        {
+          "code": "PS-62",
+          "name": "Pure Orange",
+          "item": "86062",
+          "productURL": "https://www.tamiya.com/english/products/86062/index.html"
+        },
+        {
+          "code": "PS-63",
+          "name": "Bright Gun Metal",
+          "item": "86063",
+          "productURL": "https://www.tamiya.com/english/products/86063/index.html"
+        }
+      ]
+    }
+  }
+}

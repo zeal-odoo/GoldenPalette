@@ -5,29 +5,39 @@
 //  Created by Ming Liu on 2025/2/6.
 //
 
+// 主工作台及其原生编辑窗口、可复用样式和预览。
+// 持久化由 RecipeLibrary 负责；本文件通过稳定 UUID 连接项目、颜色和独立窗口。
 import SwiftUI
 import AppKit
 
+// MARK: - SoFlat 兼容目录
+/// 最初内置的 SoFlat 商品模型，供统一目录适配及旧配方恢复使用。
 struct GoldenPaint: Identifiable {
     let name: String
     let code: String
     let series: String
     // Keep the pre-1.0.12 preview for recipes saved without an RGB snapshot.
+    /// 保存色样更新前的预览，兼容尚未记录 RGB 快照的历史配方。
     let legacyHex: String
     let isDiscontinued: Bool
 
+    /// 当前显示优先使用有出处的色样，旧值仅作为回退。
     var hex: String { PaintSwatchData.swatch(series: .goldenSoFlat, code: code)?.hex ?? legacyHex }
 
+    /// SoFlat 系列内部以商品色号作为稳定身份。
     var id: String { code }
 
+    // 颜色编辑器使用 0...255 的通道值，展示时再换算到 0...1。
     var red: Double { Double(rgb.red) }
     var green: Double { Double(rgb.green) }
     var blue: Double { Double(rgb.blue) }
 
+    /// 停产商品保留在目录中，并在名称后提示其状态。
     var displayName: String {
         isDiscontinued ? "\(name) · 停产" : name
     }
 
+    /// 安全解析六位 HEX；数据不合法时显示中性灰。
     private var rgb: (red: Int, green: Int, blue: Int) {
         guard hex.count == 6,
               let value = Int(hex, radix: 16) else {
@@ -37,6 +47,7 @@ struct GoldenPaint: Identifiable {
         return ((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF)
     }
 
+    /// 一次解析原始商品表，字段不完整的行不会进入目录。
     static let all: [GoldenPaint] = rawLibrary.compactMap { line in
         let parts = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
         guard parts.count == 5 else { return nil }
@@ -49,6 +60,7 @@ struct GoldenPaint: Identifiable {
         )
     }
 
+    // 表字段：英文名 | 商品色号 | 系列 | 历史 HEX | 是否停产；当前色样另表维护。
     // Original screen previews retained for legacy decoding; current sRGB is in PaintSwatchData.
     private static let rawLibrary = """
 Titanium White|6755|SoFlat|F3F5F2|false
@@ -66,7 +78,10 @@ Yellow Green|6675|SoFlat|AAD62C|false
 """.split(separator: "\n").map(String.init)
 }
 
+// MARK: - 界面颜色与公共装饰
+/// 集中维护浅色/深色外观的语义色，避免各组件独立硬编码主题。
 enum AppPalette {
+    // 文本、纸面与装饰色：成对定义浅色与深色模式的显示值。
     static let burntInk = adaptive(light: hex(0x1A1A1A), dark: hex(0xF4EDE1))
     static let deepInk = adaptive(light: hex(0x333333), dark: hex(0xD8CEC0))
     static let lightInk = adaptive(light: hex(0x666666), dark: hex(0xAEA498))
@@ -77,6 +92,7 @@ enum AppPalette {
     static let cinnabar = adaptive(light: hex(0xC41E3A), dark: hex(0xE04B62))
     static let mountainGreen = adaptive(light: hex(0x2E8B57), dark: hex(0x52A875))
     static let antiqueGold = adaptive(light: hex(0xD4AF37), dark: hex(0xE0B84A))
+    // 控件语义色：主操作、辅助操作与容器色共享基础主题。
     static let primary = cinnabar
     static let onPrimary = adaptive(light: .white, dark: hex(0x16090C))
     static let primaryContainer = adaptive(light: hex(0xF5C7B8), dark: hex(0x5B1C28, alpha: 0.84))
@@ -85,6 +101,7 @@ enum AppPalette {
     static let secondaryContainer = adaptive(light: hex(0xCCE6D1), dark: hex(0x17382B, alpha: 0.86))
     static let tertiary = antiqueGold
     static let tertiaryContainer = adaptive(light: hex(0xEDDC94), dark: hex(0x4B3B17, alpha: 0.86))
+    // 内容表面、描边和阴影，为项目列表及浮动编辑器提供一致层次。
     static let surface = paper
     static let canvas = adaptive(light: hex(0xF5F5F3), dark: hex(0x151617))
     static let cardSurface = adaptive(light: hex(0xFFFFFF), dark: hex(0x222426))
@@ -96,8 +113,10 @@ enum AppPalette {
     static let onSurfaceVariant = lightInk
     static let outlineVariant = adaptive(light: hex(0x333333, alpha: 0.14), dark: hex(0xFFFFFF, alpha: 0.16))
     static let shadow = adaptive(light: hex(0x1A1A1A, alpha: 0.14), dark: hex(0x000000, alpha: 0.36))
+    /// 分栏布局在默认尺寸下使用的侧栏宽度。
     static let sidebarWidth: CGFloat = 282
 
+    /// 由当前 AppKit 外观动态选择颜色，系统切换主题时自动更新。
     private static func adaptive(light: NSColor, dark: NSColor) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             let match = appearance.bestMatch(from: [.darkAqua, .aqua])
@@ -105,6 +124,7 @@ enum AppPalette {
         })
     }
 
+    /// 从 RGB 整数和透明度构造 AppKit 颜色。
     private static func hex(_ value: Int, alpha: CGFloat = 1) -> NSColor {
         NSColor(
             calibratedRed: CGFloat((value >> 16) & 0xFF) / 255,
@@ -115,10 +135,12 @@ enum AppPalette {
     }
 }
 
+/// 印章式装饰组件，文字与尺寸由调用位置决定。
 struct InkSeal: View {
     var text: String
     var size: CGFloat = 42
 
+    /// 将文字叠放于略带旋转的朱红圆角印章中。
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
@@ -142,16 +164,22 @@ struct InkSeal: View {
     }
 }
 
+// MARK: - 原生浮动窗口
+/// 允许浮动面板成为键盘和主窗口，支持其中的输入控件正常获得焦点。
 final class DraggableGlassPanel: NSPanel {
+    /// 文本输入需要面板能够成为键盘事件接收窗口。
     override var canBecomeKey: Bool { true }
+    /// 允许面板承担主窗口角色，以配合原生交互。
     override var canBecomeMain: Bool { true }
 }
 
+/// 新建项目窗口的生命周期管理，保存动作交回主界面。
 final class NewRecipeWindowController: NSWindowController, NSWindowDelegate {
     private var onSave: (String) -> Void = { _ in }
     private var onClose: () -> Void = { }
     private let windowSize = NSSize(width: 400, height: 224)
 
+    /// 创建固定尺寸面板并注入保存、取消回调；弱引用避免窗口闭包形成循环持有。
     init(onSave: @escaping (String) -> Void, onClose: @escaping () -> Void) {
         let panel = DraggableGlassPanel(
             contentRect: NSRect(origin: .zero, size: windowSize),
@@ -204,10 +232,12 @@ final class NewRecipeWindowController: NSWindowController, NSWindowDelegate {
         panel.center()
     }
 
+    /// 仅支持代码创建窗口，不从归档恢复。
     required init?(coder: NSCoder) {
         nil
     }
 
+    /// 关闭后清空回调，再通知主界面释放控制器。
     func windowWillClose(_ notification: Notification) {
         let closeAction = onClose
         onSave = { _ in }
@@ -215,11 +245,13 @@ final class NewRecipeWindowController: NSWindowController, NSWindowDelegate {
         closeAction()
     }
 
+    /// 统一通过原生关闭流程触发清理和关闭通知。
     private func dismissPanel() {
         close()
     }
 }
 
+/// 新建项目表单，只负责名称草稿与确认操作。
 struct NewRecipeWindowContent: View {
     var onSave: (String) -> Void
     var onCancel: () -> Void
@@ -227,6 +259,7 @@ struct NewRecipeWindowContent: View {
     @State private var text = ""
     @FocusState private var isNameFocused: Bool
 
+    /// 编辑项目名称并提供键盘提交、取消及初始焦点。
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -275,6 +308,7 @@ struct NewRecipeWindowContent: View {
         }
     }
 
+    /// 去掉首尾空白，拒绝空名称后向调用方提交。
     private func save() {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
@@ -282,10 +316,12 @@ struct NewRecipeWindowContent: View {
     }
 }
 
+/// 颜色编辑上下文使用稳定 UUID，窗口打开后主列表切换不会改变保存目标。
 enum ColorPickerMode: Equatable {
     case add(listItemID: UUID)
     case edit(listItemID: UUID, colorID: UUID)
 
+    /// 添加和编辑模式都返回所属项目，用于提交前重新查找。
     var listItemID: UUID {
         switch self {
         case .add(let listItemID), .edit(let listItemID, _):
@@ -293,6 +329,7 @@ enum ColorPickerMode: Equatable {
         }
     }
 
+    /// 根据模式生成窗口及表单标题。
     var title: String {
         switch self {
         case .add:
@@ -303,12 +340,14 @@ enum ColorPickerMode: Equatable {
     }
 }
 
+/// 将颜色编辑表单托管到可独立拖动的原生浮动窗口。
 final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
     let mode: ColorPickerMode
 
     private var onSave: (ColorInfo) -> Void = { _ in }
     private var onClose: (ColorEditorWindowController) -> Void = { _ in }
 
+    /// 捕获编辑上下文与初始值，保存时将草稿交回颜色库校验。
     init(
         mode: ColorPickerMode,
         recipeName: String,
@@ -339,6 +378,7 @@ final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = false
         panel.isReleasedWhenClosed = false
+        // 标题栏由 AppKit 绘制，内容区独立使用毛玻璃背景。
         // The content view sits below the title bar, so AppKit must draw its background.
         panel.titlebarAppearsTransparent = false
         panel.level = .floating
@@ -365,10 +405,12 @@ final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
         panel.center()
     }
 
+    /// 此控制器只接受明确的编辑上下文，不支持归档初始化。
     required init?(coder: NSCoder) {
         nil
     }
 
+    /// 关闭时清除保存回调并通知拥有者，避免旧窗口继续提交数据。
     func windowWillClose(_ notification: Notification) {
         let closeAction = onClose
         onSave = { _ in }
@@ -377,7 +419,9 @@ final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
+/// 将 AppKit 的窗后材质嵌入 SwiftUI，供颜色与已存配方窗口共用。
 struct FrostedWindowBackground: NSViewRepresentable {
+    /// 创建始终激活的 popover 材质背景。
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = .popover
@@ -387,17 +431,22 @@ struct FrostedWindowBackground: NSViewRepresentable {
         return view
     }
 
+    /// 材质参数固定，SwiftUI 更新时无需重复配置原生视图。
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) { }
 }
 
+// MARK: - 颜色编辑表单
+/// 使用独立草稿编辑商品参考色或 RGB，确认后才提交给主颜色库。
 struct ColorEditorWindowContent: View {
     static let contentSize = NSSize(width: 760, height: 560)
 
     let mode: ColorPickerMode
+    /// 保留原始颜色的其他字段，保存时仅覆盖本表单负责的内容。
     private let initialColor: ColorInfo
     let onSave: (ColorInfo) -> Void
     let onCancel: () -> Void
 
+    // 通道、名称和商品选择属于本窗口草稿，取消时不会写回。
     @State private var red: Double
     @State private var green: Double
     @State private var blue: Double
@@ -406,6 +455,7 @@ struct ColorEditorWindowContent: View {
     @State private var selectedPaintCode: String?
     @State private var paintSeries: PaintSeries
 
+    /// 从现有颜色恢复通道和商品系列，编辑模式下初始化商品搜索名称。
     init(
         mode: ColorPickerMode,
         initialColor: ColorInfo,
@@ -434,6 +484,7 @@ struct ColorEditorWindowContent: View {
         }
     }
 
+    /// RGB 文本框统一采用 0...255 的整数显示和输入范围。
     private static let rgbFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -444,15 +495,18 @@ struct ColorEditorWindowContent: View {
         return formatter
     }()
 
+    /// 使用当前系列的名称、色号匹配规则过滤目录。
     private var filteredPaints: [CatalogPaint] {
         paintSeries.matchingPaints(paintSearchText)
     }
 
+    /// 只在当前系列内解析选中色号，防止跨漆系串用。
     private var selectedPaint: CatalogPaint? {
         guard let selectedPaintCode else { return nil }
         return paintSeries.paints.first { $0.code == selectedPaintCode }
     }
 
+    /// 有商品选择时展示品牌色号，其余情况标为自定义颜色。
     private var editorPaintTitle: String {
         if let code = selectedPaint?.code {
             return "\(paintSeries.brand.title) \(code)"
@@ -461,6 +515,7 @@ struct ColorEditorWindowContent: View {
         return "自定义颜色"
     }
 
+    /// 左侧选择商品参考，右侧预览并微调 RGB 和名称。
     var body: some View {
         HStack(alignment: .top, spacing: 18) {
             paintLibrarySection
@@ -535,12 +590,14 @@ struct ColorEditorWindowContent: View {
         .padding(18)
         .frame(width: Self.contentSize.width, height: Self.contentSize.height, alignment: .top)
         .background(FrostedWindowBackground())
+        // 切换系列清空旧色号和搜索词，避免同名色号被自动沿用。
         .onChange(of: paintSeries) { _ in
             selectedPaintCode = nil
             paintSearchText = ""
         }
     }
 
+    /// 提供品牌/系列筛选、名称搜索及可滚动的商品列表。
     private var paintLibrarySection: some View {
         let paints = filteredPaints
 
@@ -580,6 +637,7 @@ struct ColorEditorWindowContent: View {
         .padding(14)
     }
 
+    /// 展示商品色样、系列和选择状态。
     private func paintLibraryRow(_ paint: CatalogPaint) -> some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 6)
@@ -615,6 +673,7 @@ struct ColorEditorWindowContent: View {
         .contentShape(Rectangle())
     }
 
+    /// 让同一 RGB 通道同时支持滑块与受限数字输入。
     private func colorSliderRow(title: String, value: Binding<Double>, tint: Color = .accentColor) -> some View {
         HStack {
             Text(title)
@@ -630,6 +689,7 @@ struct ColorEditorWindowContent: View {
         }
     }
 
+    /// 从原始颜色构造提交值；新增颜色分配新 UUID 并清空旧方法说明。
     private func save() {
         var color = initialColor
         color.red = clampedRGB(red)
@@ -652,6 +712,7 @@ struct ColorEditorWindowContent: View {
         onSave(color)
     }
 
+    /// 选中商品时同步名称和 RGB，后续仍允许用户按实物微调。
     private func selectPaint(_ paint: CatalogPaint) {
         selectedPaintCode = paint.code
         paintSearchText = paint.name
@@ -661,22 +722,26 @@ struct ColorEditorWindowContent: View {
         blue = paint.blue
     }
 
+    /// 保存前四舍五入并夹紧通道，复用颜色库的非有限值处理。
     private func clampedRGB(_ value: Double) -> Double {
         ColorInfo.clampedRGB(value.rounded())
     }
 
+    /// 用简单加权阈值选择色块上的黑白文字；此值仅用于可读性判断。
     private func readableTextColor(red: Double, green: Double, blue: Double) -> Color {
         let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         return luminance > 150 ? .black : .white
     }
 }
 
+/// 调色方法的就地编辑器，临时草稿允许取消而不改动已保存文本。
 struct ColorMethodEditor: View {
     @Binding var method: String
 
     @State private var isEditing = false
     @State private var tempMethod = ""
 
+    /// 在摘要和编辑表单之间切换，只有保存操作更新外部绑定。
     var body: some View {
         Group {
             if isEditing {
@@ -740,6 +805,7 @@ struct ColorMethodEditor: View {
     }
 }
 
+/// 项目标题的就地重命名组件，编辑状态由主界面控制。
 struct EditableListItemHeader: View {
     @Binding var text: String
     @Binding var isEditing: Bool
@@ -747,6 +813,7 @@ struct EditableListItemHeader: View {
     @State private var tempText = ""
     @FocusState private var isNameFocused: Bool
 
+    /// 进入编辑时复制当前名称并聚焦，未确认前保留原标题。
     var body: some View {
         HStack(spacing: 8) {
             if isEditing {
@@ -778,6 +845,7 @@ struct EditableListItemHeader: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// 提交非空名称并退出编辑状态。
     private func save() {
         let name = tempText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
@@ -786,6 +854,8 @@ struct EditableListItemHeader: View {
     }
 }
 
+// MARK: - 功能窗口上下文
+/// 固定调色任务所属项目及初始输入，避免主窗口切换选中项影响保存。
 private struct ProjectMixingRequest: Identifiable {
     let projectID: UUID
     let projectName: String
@@ -793,25 +863,42 @@ private struct ProjectMixingRequest: Identifiable {
     let referencePaint: PaintReference?
     let paintSet: MixingPaintSet
 
+    /// 以项目身份控制该项目的调色弹窗。
     var id: UUID { projectID }
 }
 
+/// 打开说明书考证时记录的项目身份及备用显示名称。
+private struct ProjectManualRequest: Identifiable {
+    let id: UUID
+    let name: String
+}
+
+// MARK: - 主工作台
+/// 连接项目列表、颜色卡片、AI 调色和说明书考证入口。
 struct ContentView: View {
+    /// 颜色库由应用根节点拥有，所有窗口通过同一绑定读取最新数据。
     @Binding private var library: RecipeLibrary
 
     @State private var isRenamingRecipe = false
+    // 持有原生窗口控制器，避免窗口显示期间被提前释放。
     @State private var newRecipeWindowController: NewRecipeWindowController?
     @State private var colorEditorWindowController: ColorEditorWindowController?
     @State private var savedRecipeWindowController: SavedMixingRecipeWindowController?
+    /// 只保存选中项目 UUID；当前数组位置每次从库中重新解析。
     @State private var selectedItemID: UUID?
+    // 弹窗保存任务创建时的项目上下文，与当前侧栏选择相互独立。
     @State private var mixingRequest: ProjectMixingRequest?
+    @State private var manualRequest: ProjectManualRequest?
 
+    /// 当前颜色库的项目快照，供视图渲染使用。
     private var items: [ListItem] { library.items }
 
+    // 生成服务由应用注入，便于界面测试使用固定结果。
     private let configuration: AIConfiguration
     private let generateRecipe: MixingGenerator
     private let generateBlend: BlendMixingGenerator
 
+    /// 接收共享库与生成能力；未显式注入时使用真实 Codex 服务。
     init(
         library: Binding<RecipeLibrary>,
         configuration: AIConfiguration = AIConfiguration(),
@@ -828,11 +915,13 @@ struct ContentView: View {
         self.generateBlend = generateBlend
     }
 
+    /// 按选中 UUID 解析最新位置，删除或刷新后不会沿用失效下标。
     private var selectedIndex: Int? {
         guard let selectedItemID else { return nil }
         return items.firstIndex(where: { $0.id == selectedItemID })
     }
 
+    /// 组装主布局，绑定功能弹窗，并在数据变化时核对选择与窗口状态。
     var body: some View {
         let generator: MixingGenerator = generateRecipe
         let blendGenerator: BlendMixingGenerator = generateBlend
@@ -849,8 +938,21 @@ struct ContentView: View {
                     canSave: !library.isReadOnly && library.item(id: request.projectID) != nil,
                     generateBlend: blendGenerator,
                     generateRecipe: generator
+                // 始终保存到请求创建时的项目，不跟随后续侧栏选择变化。
                 ) { palette in
                     library.addMixingPalette(palette, to: request.projectID)
+                }
+            }
+            .sheet(item: $manualRequest) { request in
+                ManualStudyView(
+                    projectID: request.id,
+                    projectName: library.item(id: request.id)?.text ?? request.name,
+                    configuration: configuration,
+                    canSave: !library.isReadOnly && library.item(id: request.id) != nil,
+                    generateRecipe: generator,
+                    generateBlend: blendGenerator
+                ) { palette, context in
+                    library.addMixingPalette(palette, to: request.id, context: context)
                 }
             }
             .onChange(of: selectedItemID) { _ in
@@ -871,8 +973,24 @@ struct ContentView: View {
             }
     }
 
+    /// 工具栏按当前选择和可写状态开放考证、调色及项目管理入口。
     @ToolbarContentBuilder
     private var recipeToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            if let selectedIndex {
+                Button {
+                    let item = items[selectedIndex]
+                    manualRequest = ProjectManualRequest(id: item.id, name: item.text)
+                } label: {
+                    Label("说明书考证", systemImage: "doc.text.magnifyingglass")
+                }
+                .labelStyle(.titleAndIcon)
+                .help("查找或导入模型说明书，考证配色并标注零件")
+                .accessibilityIdentifier("manualStudyButton")
+                .disabled(library.isReadOnly)
+            }
+        }
+
         ToolbarItem(placement: .primaryAction) {
             if selectedIndex != nil {
                 Button {
@@ -883,7 +1001,7 @@ struct ContentView: View {
                 .labelStyle(.titleAndIcon)
                 .buttonStyle(.borderedProminent)
                 .tint(AppPalette.primary)
-                .help("输入本色 RGB 或选择颜色，生成本色、阴影色、高光色各 200 滴的配方")
+                .help("输入本色 RGB 或选择颜色，调制本色后各取 20 滴，追加少量颜料制作自然且层次鲜明的阴影和高光")
                 .accessibilityIdentifier("aiMixingButton")
                 .disabled(library.isReadOnly)
             }
@@ -924,6 +1042,8 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - 分栏与项目展示
+    /// 新系统使用原生分栏导航，旧系统以水平布局提供相同工作区域。
     @ViewBuilder
     private var rootLayout: some View {
         if #available(macOS 13.0, *) {
@@ -945,6 +1065,7 @@ struct ContentView: View {
         }
     }
 
+    /// 展示项目列表、数量和设置入口。
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
@@ -998,6 +1119,7 @@ struct ContentView: View {
         }
     }
 
+    /// 在侧栏紧凑显示项目名称、颜色数量和前几个颜色的叠层预览。
     private func sidebarRow(_ item: ListItem) -> some View {
         HStack(spacing: 12) {
             colorStackPreview(item.colors)
@@ -1018,6 +1140,7 @@ struct ContentView: View {
         .contentShape(Rectangle())
     }
 
+    /// 根据当前项目展示颜色网格或空状态；重命名时滚回项目标题。
     @ViewBuilder
     private var detail: some View {
         if let selectedIndex {
@@ -1086,6 +1209,7 @@ struct ContentView: View {
         }
     }
 
+    /// 在工作区底色上叠加不参与点击的纸张纹理。
     private var canvasBackground: some View {
         AppPalette.canvas
             .overlay {
@@ -1096,6 +1220,7 @@ struct ContentView: View {
             .ignoresSafeArea()
     }
 
+    /// 通过确定的点位生成轻微纸纹，避免每次刷新出现随机闪动。
     private var paperGrain: some View {
         Canvas { context, size in
             for index in 0..<90 {
@@ -1107,6 +1232,7 @@ struct ContentView: View {
         }
     }
 
+    /// 使用随容器尺寸缩放的路径绘制空状态背景山形。
     private var inkMountains: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
@@ -1154,6 +1280,7 @@ struct ContentView: View {
         }
     }
 
+    /// 组合可编辑项目名、颜色总数和整组色条。
     private func recipeHeader(item: ListItem, title: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline, spacing: 16) {
@@ -1185,6 +1312,7 @@ struct ContentView: View {
         }
     }
 
+    /// 项目已创建但尚无颜色时，引导用户从 AI 调色开始。
     private var emptyRecipeContent: some View {
         VStack(spacing: 16) {
             Image(systemName: "paintpalette")
@@ -1212,6 +1340,7 @@ struct ContentView: View {
         .contentSurface(cornerRadius: 20)
     }
 
+    /// 单色卡片聚合颜色编辑、配方查看、重新调色、删除和方法说明入口。
     private func colorCard(_ color: ColorInfo, itemID: UUID) -> some View {
         let displayName = color.name.isEmpty ? (color.paintName ?? "未命名颜色") : color.name
 
@@ -1319,6 +1448,7 @@ struct ContentView: View {
         .contentSurface(cornerRadius: 22, elevated: true)
     }
 
+    /// 最多叠放四个色块作为侧栏缩略图，无颜色时使用画板图标。
     private func colorStackPreview(_ colors: [ColorInfo]) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
@@ -1340,6 +1470,7 @@ struct ContentView: View {
         }
     }
 
+    /// 等分项目色条；空项目放置一个中性色避免除零。
     private func colorStrip(_ colors: [ColorInfo]) -> some View {
         GeometryReader { proxy in
             let visibleColors = colors.isEmpty ? [ColorInfo(red: 235, green: 232, blue: 222)] : colors
@@ -1360,6 +1491,7 @@ struct ContentView: View {
         }
     }
 
+    /// 按系统版本选择原生空状态组件或等效的文字图标布局。
     @ViewBuilder
     private func emptyStateView(title: String, symbol: String, description: String) -> some View {
         if #available(macOS 14.0, *) {
@@ -1379,12 +1511,15 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - 库操作与稳定身份绑定
+    /// 只有项目创建并保存成功后才切换选中项。
     private func addItem(named text: String) {
         if let itemID = library.addItem(named: text) {
             selectedItemID = itemID
         }
     }
 
+    /// 每次读写都按 UUID 查找最新项目，避免视图持有旧名称快照。
     private func titleBinding(for item: ListItem) -> Binding<String> {
         Binding(
             get: { library.item(id: item.id)?.text ?? item.text },
@@ -1392,6 +1527,7 @@ struct ContentView: View {
         )
     }
 
+    /// 按项目和颜色双层 UUID 更新方法，避免独立窗口同时编辑时覆盖无关字段。
     private func methodBinding(for color: ColorInfo, itemID: UUID) -> Binding<String> {
         Binding(
             get: { library.color(itemID: itemID, colorID: color.id)?.method ?? color.method },
@@ -1399,6 +1535,7 @@ struct ContentView: View {
         )
     }
 
+    /// 数据改变后修复选择，并关闭已删除或已不匹配的颜色/配方窗口。
     private func reconcileSelection() {
         if !items.contains(where: { $0.id == selectedItemID }) {
             selectedItemID = items.first?.id
@@ -1419,12 +1556,14 @@ struct ContentView: View {
         }
     }
 
+    /// 主界面离开或打开新流程时统一关闭附属编辑窗口。
     private func closeEditors() {
         newRecipeWindowController?.close()
         colorEditorWindowController?.close()
         savedRecipeWindowController?.close()
     }
 
+    /// 已有新建窗口则置前，否则创建并在关闭时释放控制器。
     private func showNewRecipeWindow() {
         if let window = newRecipeWindowController?.window {
             NSApp.activate(ignoringOtherApps: true)
@@ -1446,6 +1585,7 @@ struct ContentView: View {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// 删除选中项目前关闭其颜色编辑器，成功后重新选取有效项目。
     private func deleteSelectedItem() {
         guard let selectedIndex else { return }
         let removedID = items[selectedIndex].id
@@ -1457,6 +1597,7 @@ struct ContentView: View {
         }
     }
 
+    /// 从指定颜色或项目最近配方恢复调色起点，并固定原料套装和项目身份。
     private func showAIMixing(color: ColorInfo? = nil) {
         guard !library.isReadOnly, let selectedItemID,
               let project = library.item(id: selectedItemID) else { return }
@@ -1477,6 +1618,7 @@ struct ContentView: View {
         )
     }
 
+    /// 打开仍与库中数据一致的配方快照；相同窗口已存在时直接置前。
     private func showSavedMixingRecipe(_ recipe: MixingRecipe, itemID: UUID, colorID: UUID) {
         guard let item = library.item(id: itemID),
               library.color(itemID: itemID, colorID: colorID)?.mixingRecipe == recipe else { return }
@@ -1505,6 +1647,7 @@ struct ContentView: View {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// 同一编辑目标复用窗口，其他目标关闭旧窗口；保存始终沿用原始上下文。
     private func showColorEditor(mode: ColorPickerMode, initialColor: ColorInfo) {
         if let controller = colorEditorWindowController, controller.mode == mode {
             NSApp.activate(ignoringOtherApps: true)
@@ -1538,7 +1681,9 @@ struct ContentView: View {
 
 }
 
+// MARK: - 共享样式与系统版本兼容
 private extension View {
+    /// 为内容卡片统一添加背景、细描边和可选的轻阴影。
     func contentSurface(cornerRadius: CGFloat, elevated: Bool = false) -> some View {
         self
             .background(AppPalette.cardSurface, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -1550,6 +1695,7 @@ private extension View {
             .shadow(color: elevated ? AppPalette.shadow.opacity(0.35) : .clear, radius: 8, x: 0, y: 3)
     }
 
+    /// 在支持 Liquid Glass 的系统上将相邻玻璃控件放入统一容器。
     @ViewBuilder
     func glassActionGroup() -> some View {
         if #available(macOS 26.0, *) {
@@ -1561,6 +1707,7 @@ private extension View {
         }
     }
 
+    /// 支持时隐藏系统列表背景，让侧栏使用应用背景。
     @ViewBuilder
     func transparentListBackground() -> some View {
         if #available(macOS 13.0, *) {
@@ -1570,6 +1717,7 @@ private extension View {
         }
     }
 
+    /// 新系统采用玻璃材质，旧系统回退为普通材质、描边和阴影。
     @ViewBuilder
     func floatingLiquidGlassPanel(cornerRadius: CGFloat) -> some View {
         if #available(macOS 26.0, *) {
@@ -1587,6 +1735,7 @@ private extension View {
         }
     }
 
+    /// 浮动面板采用固定尺寸的自绘按钮，突出主要操作。
     func floatingPanelButtonStyle(prominent: Bool = false) -> some View {
         self
             .buttonStyle(.plain)
@@ -1605,6 +1754,7 @@ private extension View {
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
+    /// 主操作按钮按系统能力选择玻璃或边框强调样式。
     @ViewBuilder
     func liquidGlassProminentButtonStyle() -> some View {
         if #available(macOS 26.0, iOS 26.0, *) {
@@ -1626,6 +1776,7 @@ private extension View {
         }
     }
 
+    /// 次要操作按钮按系统能力选择玻璃或普通边框样式。
     @ViewBuilder
     func liquidGlassButtonStyle() -> some View {
         if #available(macOS 26.0, iOS 26.0, *) {
@@ -1647,19 +1798,24 @@ private extension View {
     }
 }
 
+// MARK: - 独立于用户数据的设计预览
 #if DEBUG
+/// 用内存颜色库包装主界面，预览操作不会写入真实项目。
 private struct RecipePreview: View {
     @State private var library: RecipeLibrary
 
+    /// 将指定预览项目转换为可编辑的本地状态。
     init(items: [ListItem]) {
         _library = State(initialValue: RecipeLibrary(previewItems: items))
     }
 
+    /// 复用真实主界面布局检查预览数据的展示。
     var body: some View {
         ContentView(library: $library)
     }
 }
 
+/// 设计预览使用的固定 SoFlat 色样与示例项目。
 private enum RecipePreviewData {
     static let colors: [ColorInfo] = GoldenPaint.all.map { paint in
         ColorInfo(
@@ -1679,6 +1835,7 @@ private enum RecipePreviewData {
     ]
 }
 
+// 预览覆盖浅色、深色、空项目和独立编辑窗口，便于检查主要界面状态。
 #Preview("配色工作台 · 浅色") {
     RecipePreview(items: RecipePreviewData.items)
         .frame(width: 1180, height: 780)

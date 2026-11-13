@@ -1,12 +1,17 @@
+// 商品色目录与可用调色套装。
+// 品牌/漆系/色号用于查找参考色；MixingPaintSet 另外限定 AI 真正可以使用的原料。
 import Foundation
 
+/// 商品品牌，作为系列选择器的第一层筛选条件。
 enum PaintBrand: String, CaseIterable, Identifiable, Sendable {
     case golden
     case tamiya
     case mrHobby
 
+    /// 使用稳定原始值作为列表身份。
     var id: String { rawValue }
 
+    /// 品牌的用户可读名称。
     var title: String {
         switch self {
         case .golden: return "GOLDEN"
@@ -15,6 +20,7 @@ enum PaintBrand: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// 切换品牌后选中的初始漆系，避免继续使用前一个品牌的系列。
     var defaultSeries: PaintSeries {
         switch self {
         case .golden: return .goldenSoFlat
@@ -23,9 +29,11 @@ enum PaintBrand: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// 只提供属于当前品牌的漆系。
     var series: [PaintSeries] { PaintSeries.allCases.filter { $0.brand == self } }
 }
 
+/// 系列与色号共同持久化：同品牌不同漆系可能共享色号，但不能互换。
 /// Persist the series as well as the code: Tamiya acrylic and enamel share X/XF numbers.
 enum PaintSeries: String, Codable, CaseIterable, Identifiable, Sendable {
     case goldenSoFlat
@@ -34,34 +42,42 @@ enum PaintSeries: String, Codable, CaseIterable, Identifiable, Sendable {
     case tamiyaEnamel
     case tamiyaLacquer
     case tamiyaSpray
+    case tamiyaAircraft
+    case tamiyaPolycarbonate
     case mrColor
     case aqueous
     case acrysion
 
+    /// 原始值同时作为存档值和目录索引的一部分。
     var id: String { rawValue }
 
+    /// 由具体漆系确定所属品牌。
     var brand: PaintBrand {
         switch self {
         case .goldenSoFlat, .goldenFluid: return .golden
-        case .tamiyaAcrylic, .tamiyaEnamel, .tamiyaLacquer, .tamiyaSpray: return .tamiya
+        case .tamiyaAcrylic, .tamiyaEnamel, .tamiyaLacquer, .tamiyaSpray, .tamiyaAircraft, .tamiyaPolycarbonate: return .tamiya
         case .mrColor, .aqueous, .acrysion: return .mrHobby
         }
     }
 
+    /// 系列选择菜单中的简短名称，包含色号范围或指定套装信息。
     var shortTitle: String {
         switch self {
         case .goldenSoFlat: return "SoFlat · 指定 12 色"
-        case .goldenFluid: return "Fluid Acrylics · 指定 13 色"
+        case .goldenFluid: return "Fluid Acrylics · 指定 15 色"
         case .tamiyaAcrylic: return "丙烯漆 · X / XF"
         case .tamiyaEnamel: return "珐琅漆 · X / XF"
         case .tamiyaLacquer: return "Lacquer 溶剂型漆 · LP"
         case .tamiyaSpray: return "喷罐漆 · TS"
+        case .tamiyaAircraft: return "航空模型喷罐漆 · AS"
+        case .tamiyaPolycarbonate: return "聚碳酸酯喷罐漆 · PS"
         case .mrColor: return "Mr.Color 溶剂型漆 · C"
         case .aqueous: return "水性 Hobby Color · H"
         case .acrysion: return "Acrysion 水性漆 · N"
         }
     }
 
+    /// 项目颜色、配方和提示词中的完整系列名称。
     var title: String {
         switch self {
         case .goldenSoFlat: return "GOLDEN SoFlat"
@@ -70,21 +86,24 @@ enum PaintSeries: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// 从集中维护的目录获取该系列的商品色。
     var paints: [CatalogPaint] { PaintCatalog.paints(for: self) }
 
+    /// 解释本应用收录范围及预览色限制，避免误认为包含全产品线。
     var catalogNote: String {
         switch self {
         case .goldenSoFlat:
             return "使用指定的 12 色。" + previewNote
         case .goldenFluid:
-            return "10 色调色套装，另加吡咯橙、二噁嗪紫、黄赭石，共 13 色。" + previewNote
-        case .tamiyaSpray:
-            return "收录 TS-1～TS-102 中的 98 个有色参考，不含 TS-13、TS-65、TS-79、TS-80 无色罩光款。" + previewNote
+            return "10 色调色套装，另加吡咯橙、二噁嗪紫、黄赭石、群青蓝、永久浅绿，共 15 色。" + previewNote
+        case .tamiyaAcrylic, .tamiyaEnamel, .tamiyaLacquer, .tamiyaSpray, .tamiyaAircraft, .tamiyaPolycarbonate:
+            return "按田宫官网目录核对，收录 \(matchingPaints("").count) 个有色参考；不含无色罩光、消光添加剂或稀释剂。" + previewNote
         default:
             return "内置常用实色色号，不含透明漆、金属漆或添加剂。" + previewNote
         }
     }
 
+    /// 根据系列说明屏幕色来源；单个商品可再提供更具体的来源。
     var previewNote: String {
         switch self {
         case .goldenFluid:
@@ -92,140 +111,217 @@ enum PaintSeries: String, Codable, CaseIterable, Identifiable, Sendable {
         case .goldenSoFlat:
             return PaintSwatchSource.goldenSoFlatSwatch.note
         case .tamiyaEnamel:
-            return "按具体色号使用 Encycolorpedia 的 sRGB；未匹配项取自田宫官方色卡。均为屏幕参考，非官方实测 RGB。"
-        case .tamiyaAcrylic, .tamiyaLacquer:
-            return PaintSwatchSource.tamiyaChart.note
-        case .tamiyaSpray:
+            return "已匹配色号保留 Encycolorpedia 的 sRGB，其余取自田宫官方色卡。均为屏幕参考，非官方实测 RGB。" + Self.sprayEffectNote
+        case .tamiyaAcrylic, .tamiyaLacquer, .tamiyaSpray, .tamiyaAircraft:
             return PaintSwatchSource.tamiyaChart.note + Self.sprayEffectNote
+        case .tamiyaPolycarbonate:
+            return PaintSwatchSource.tamiyaChart.note + Self.sprayEffectNote
+                + "PS 是聚碳酸酯车壳用漆，此处只参考其颜色。"
         case .mrColor, .aqueous, .acrysion:
             return PaintSwatchSource.mrHobbyChart.note
         }
     }
 
-    static let sprayEffectNote = "特殊效果色仅匹配近似颜色，不复现金属、珠光、荧光或透明效果。"
+    /// 特殊效果商品的 RGB 只能近似颜色，不能表达表面效果。
+    static let sprayEffectNote = "特殊效果色仅匹配近似颜色，不复现金属、珠光、荧光、透明或随角度变化的效果。"
 
+    /// 按中英文名称或色号搜索，忽略大小写并兼容省略连字符及 Perm 缩写。
     func matchingPaints(_ search: String) -> [CatalogPaint] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return paints }
+        // 未经当前官网确认的旧色号仅保留给历史配方，不再出现在新选色列表。
+        let availablePaints = paints.filter(\.isSelectable)
+        guard !query.isEmpty else { return availablePaints }
         let codeQuery = query.replacingOccurrences(of: "-", with: "")
-        return paints.filter {
+        return availablePaints.filter {
             $0.mixingName.localizedCaseInsensitiveContains(query)
+                || $0.name.replacingOccurrences(of: "Permanent ", with: "Perm ").localizedCaseInsensitiveContains(query)
                 || $0.code.replacingOccurrences(of: "-", with: "").localizedCaseInsensitiveContains(codeQuery)
         }
     }
 
+    /// 从项目颜色恢复系列，依次考虑显式商品字段、参考色和旧配方系列。
     static func forColor(_ color: ColorInfo) -> PaintSeries {
         if let series = allCases.first(where: { $0.title == color.paintSeries }) { return series }
         return color.mixingRecipe?.referencePaint?.series ?? color.mixingRecipe?.paintSeries ?? .goldenSoFlat
     }
 }
 
+/// 一个具体系列中的商品色，显示色可由带出处的色样表覆盖。
 struct CatalogPaint: Identifiable, Equatable, Sendable {
     let series: PaintSeries
     let code: String
     let name: String
     let chineseName: String
     // Original preview before the sourced sRGB update, used only for legacy decoding.
+    /// 保留旧 RGB 以兼容没有预览快照的历史参考色，不能随当前色样更新。
     let legacyHex: String
 
+    /// 优先使用已记录出处的新色样；没有覆盖项时使用原目录预览。
     var hex: String { PaintSwatchData.swatch(series: series, code: code)?.hex ?? legacyHex }
-    var previewNote: String {
-        guard let swatch = PaintSwatchData.swatch(series: series, code: code) else { return series.previewNote }
-        return series == .tamiyaSpray ? swatch.source.note + PaintSeries.sprayEffectNote : swatch.source.note
+    /// 旧版曾把丙烯 NATO 色号复制到珐琅；当前官方珐琅目录未确认这三项。
+    /// 保留模型身份可读取旧配方，新搜索与选色只展示已核对商品。
+    var isSelectable: Bool {
+        series != .tamiyaEnamel || !["XF-67", "XF-68", "XF-69"].contains(code)
     }
 
+    /// 当前色样来源与效果限制会同时进入界面、AI 提示和保存的配方说明。
+    var previewNote: String {
+        let sourceNote = PaintSwatchData.swatch(series: series, code: code)?.source.note ?? series.previewNote
+        guard series.brand == .tamiya else { return sourceNote }
+        let legacyNote = isSelectable ? "" : "此为旧版珐琅参考，当前官方目录未确认，请核对实际漆系。"
+        let materialNote = series == .tamiyaPolycarbonate ? "PS 是聚碳酸酯车壳用漆，此处只参考其颜色。" : ""
+        return sourceNote + PaintSeries.sprayEffectNote + materialNote + legacyNote
+    }
+
+    /// 组合系列与色号作为身份，避免 X/XF 等共享编号发生冲突。
     var id: String { "\(series.rawValue):\(code)" }
+    /// 调色界面同时提供中文名和瓶身英文名。
     var mixingName: String { "\(chineseName) · \(name)" }
+    /// 商品列表统一沿用中英文显示名。
     var displayName: String { mixingName }
+    /// 用量表额外显示系列，防止同名颜料跨系列误用。
     var ingredientName: String { "\(series.title) · \(mixingName)" }
+    // 将六位十六进制色样拆成 0...255 通道，供预览和目标色转换使用。
     var red: Double { Double((rgb >> 16) & 0xFF) }
     var green: Double { Double((rgb >> 8) & 0xFF) }
     var blue: Double { Double(rgb & 0xFF) }
+    /// 用于悬浮提示和 AI 输入的屏幕色说明。
     var rgbDescription: String { "sRGB \(Int(red)), \(Int(green)), \(Int(blue)) · #\(hex)" }
+    /// 无效色样使用中性灰回退，目录完整性由测试另行检查。
     private var rgb: Int { Int(hex, radix: 16) ?? 0xCCCCCC }
 }
 
-/// New requests use one kit; the combined case is retained only for saved v1.0.7 recipes.
+/// 新请求选择单一套装；历史枚举值继续解释旧配方的精确原料范围。
+/// New requests use one kit; older cases retain the exact paints in saved recipes.
 enum MixingPaintSet: String, Codable, Identifiable, Sendable {
     case soFlat12
+    /// 旧 13 色 Fluid 套装，仅用于恢复已保存配方。
     case fluid13
+    case fluid15
+    /// 旧跨系列 25 色组合，仅用于读取历史结果，不再开放生成。
     case soFlatAndFluid25
 
-    static let selectable: [MixingPaintSet] = [.soFlat12, .fluid13]
+    /// 界面可选项独立于全部历史枚举值，避免旧格式重新进入生成入口。
+    static let selectable: [MixingPaintSet] = [.soFlat12, .fluid15]
+    /// 新建任务默认使用指定的 SoFlat 12 色。
     static let defaultSelection = MixingPaintSet.soFlat12
 
+    /// 稳定套装身份，用于存档和选择器。
     var id: String { rawValue }
+    /// 判断套装是否允许用于新的 AI 请求。
     var isSelectable: Bool { Self.selectable.contains(self) }
 
+    /// 套装所涉及的系列；旧组合仍返回两个系列。
     var series: [PaintSeries] {
         switch self {
         case .soFlat12: return [.goldenSoFlat]
-        case .fluid13: return [.goldenFluid]
+        case .fluid13, .fluid15: return [.goldenFluid]
         case .soFlatAndFluid25: return [.goldenSoFlat, .goldenFluid]
         }
     }
 
+    /// 对应旧配方的单一系列字段，供存档一致性校验使用。
     // Matches the series field used by older saved recipes.
-    var primarySeries: PaintSeries { self == .fluid13 ? .goldenFluid : .goldenSoFlat }
-    var paints: [CatalogPaint] { series.flatMap(\.paints) }
+    var primarySeries: PaintSeries {
+        switch self {
+        case .fluid13, .fluid15: return .goldenFluid
+        case .soFlat12, .soFlatAndFluid25: return .goldenSoFlat
+        }
+    }
 
+    /// 展开套装实际原料；旧 Fluid 和组合套装必须按冻结色号筛选。
+    var paints: [CatalogPaint] {
+        switch self {
+        case .fluid13:
+            return PaintSeries.goldenFluid.paints.filter { Self.legacyFluidCodes.contains($0.code) }
+        case .soFlatAndFluid25:
+            return Self.soFlat12.paints + Self.fluid13.paints
+        case .soFlat12, .fluid15:
+            return series.flatMap(\.paints)
+        }
+    }
+
+    // 历史套装的色号集合保持不变，新增商品不会改变旧配方的列全色号规则。
+    // Freeze the old kit so adding catalog colors cannot invalidate saved 13- or 25-color recipes.
+    private static let legacyFluidCodes: Set<String> = [
+        "2009", "2008", "2210", "2305", "2260", "2255", "2270",
+        "2275", "2040", "2380", "2276", "2150", "2407"
+    ]
+
+    /// 在配方及用量说明中使用的原料套装名称。
     var title: String {
         switch self {
         case .soFlat12: return "GOLDEN SoFlat"
-        case .fluid13: return "GOLDEN Fluid Acrylics"
+        case .fluid13, .fluid15: return "GOLDEN Fluid Acrylics"
         case .soFlatAndFluid25: return "GOLDEN SoFlat + Fluid Acrylics"
         }
     }
 
+    /// 选择器中区分套装规模与旧版身份的名称。
     var selectionTitle: String {
         switch self {
         case .soFlat12: return "SoFlat 12 色"
-        case .fluid13: return "Fluid Acrylics 13 色"
+        case .fluid13: return "Fluid Acrylics 13 色（旧版）"
+        case .fluid15: return "Fluid Acrylics 15 色"
         case .soFlatAndFluid25: return "旧版组合 25 色"
         }
     }
 
+    /// 拒绝使用仅为存档兼容而保留的旧套装生成新配方。
     func validateForGeneration() throws {
         guard isSelectable else {
-            throw MixingError.invalidRecipe("请选择 SoFlat 12 色或 Fluid Acrylics 13 色，分别生成配方。")
+            throw MixingError.invalidRecipe("请选择 SoFlat 12 色或 Fluid Acrylics 15 色，分别生成配方。")
         }
     }
 }
 
+// MARK: - 内置商品数据
+/// 按漆系建立只读目录，统一封装文本表解析。
 enum PaintCatalog {
+    /// 获取指定系列的目录，未知键返回空列表。
     static func paints(for series: PaintSeries) -> [CatalogPaint] {
         catalogs[series] ?? []
     }
 
+    /// 静态构建目录，避免每次视图刷新都重新解析文本表。
     private static let catalogs: [PaintSeries: [CatalogPaint]] = [
         .goldenSoFlat: GoldenPaint.all.map {
             CatalogPaint(series: .goldenSoFlat, code: $0.code, name: $0.name, chineseName: $0.chineseName, legacyHex: $0.legacyHex)
         },
         .goldenFluid: parse(goldenFluid, series: .goldenFluid),
-        .tamiyaAcrylic: parse(tamiyaCommon, series: .tamiyaAcrylic),
-        .tamiyaEnamel: parse(tamiyaCommon, series: .tamiyaEnamel),
-        .tamiyaLacquer: parse(tamiyaLacquer, series: .tamiyaLacquer),
+        .tamiyaAcrylic: parse(tamiyaCommon + "\n" + TamiyaPaintAdditions.acrylic, series: .tamiyaAcrylic),
+        .tamiyaEnamel: parse(tamiyaCommon + "\n" + TamiyaPaintAdditions.enamel, series: .tamiyaEnamel),
+        .tamiyaLacquer: parse(tamiyaLacquer + "\n" + TamiyaPaintAdditions.lacquer, series: .tamiyaLacquer),
         .tamiyaSpray: parse(tamiyaSpray, series: .tamiyaSpray),
+        .tamiyaAircraft: parse(TamiyaPaintAdditions.aircraft, series: .tamiyaAircraft),
+        .tamiyaPolycarbonate: parse(TamiyaPaintAdditions.polycarbonate, series: .tamiyaPolycarbonate),
         .mrColor: parse(mrColor, series: .mrColor),
         .aqueous: parse(aqueous, series: .aqueous),
         .acrysion: parse(acrysion, series: .acrysion)
     ]
 
+    /// 表字段依次为“色号 | 中文名 | 英文名 | 历史 HEX”，跳过结构不完整的行。
     private static func parse(_ table: String, series: PaintSeries) -> [CatalogPaint] {
-        table.split(separator: "\n").compactMap { line in
+        let paints = table.split(separator: "\n").compactMap { line -> CatalogPaint? in
             let fields = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 4 else { return nil }
             return CatalogPaint(series: series, code: fields[0], name: fields[2], chineseName: fields[1], legacyHex: fields[3])
         }
+        // 按瓶身色号自然排序，增补条目回到对应编号位置，X-2 不会排在 X-19 后。
+        return series.brand == .tamiya
+            ? paints.sorted { $0.code.compare($1.code, options: .numeric) == .orderedAscending }
+            : paints
     }
 
-    // The requested Fluid Mixing Set (0928) plus three additional Fluid Acrylic colors.
+    // Fluid 指定原料由 10 色套装及 5 个补充色组成；保留商品 2xxx 色号和原有来源记录。
+    // The requested Fluid Mixing Set (0928) plus five additional Fluid Acrylic colors.
     // https://goldenartistcolors.com/products/fluid-acrylics-mixing-set
     // https://goldenartistcolors.com/products/golden-artist-acrylics/fluid/pigment-data
     // Screen sRGB: official acrylic mixer, <mixer ID>.paintColor.srgb, checked 2026-10-09.
     // https://assets.goldenartistcolors.com/mixerPaintData/index.json
     // Mixer IDs use 1xxx; each mapped entry explicitly supports Fluid in paletteTags.
     // Keep retail Fluid 2xxx codes. The code-to-ID mapping is documented in README.md.
+    // Added 2400/2250 from mixer IDs 1400/1250, including the "Perm Green Light" alias, checked 2026-11-11.
     private static let goldenFluid = """
 2009|苯并咪唑酮浅黄|Benzimidazolone Yellow Light|F6CF00
 2008|苯并咪唑酮中黄|Benzimidazolone Yellow Medium|FEC000
@@ -240,13 +336,17 @@ enum PaintCatalog {
 2276|吡咯橙|Pyrrole Orange|F33C00
 2150|二噁嗪紫|Dioxazine Purple|281F1D
 2407|黄赭石|Yellow Ochre|B2792F
+2400|群青蓝|Ultramarine Blue|19123E
+2250|永久浅绿|Permanent Green Light|007639
 """
 
+    // 以下表中的 HEX 是历史兼容值；当前显示色优先来自 PaintSwatchData。
     // Codes and names: official Tamiya color chart (2024) and Mr.Hobby chart (2024–2025).
     // https://www.tamiya.com/cms/img/usr/inst/paints/202405_paints.pdf
     // https://www.mr-hobby.com/en/record-download/catalog/23
     // This is a curated solid-color mixing library, not the complete product catalogue.
     // Retain the old approximations for decoding saved references; PaintSwatchData supplies current sRGB.
+    /// 保留旧版丙烯／珐琅共用基础表及历史 HEX；增补清单按漆系分别核对。
     private static let tamiyaCommon = """
 X-1|黑色|Black|202020
 X-2|白色|White|F5F5F0
@@ -292,6 +392,7 @@ XF-68|北约棕|NATO Brown|74544A
 XF-69|北约黑|NATO Black|343839
 """
 
+    /// 田宫 LP 系列的内置有色商品目录。
     private static let tamiyaLacquer = """
 LP-1|黑色|Black|202020
 LP-2|白色|White|F5F5F0
@@ -327,6 +428,7 @@ LP-50|亮红|Bright Red|E93629
 LP-51|纯橙|Pure Orange|F67523
 """
 
+    // TS 喷罐作为目标参考色使用；无色罩光款不进入可选颜色目录。
     // TS product codes and English names checked against Tamiya's catalog on 2026-10-09.
     // https://www.tamiya.com/english/products/list.html?genre_item=e_504030
     // Legacy app-authored RGB; current official-chart sRGB is supplied by PaintSwatchData.
@@ -433,6 +535,7 @@ TS-101|底色白|Base White|F5F5EF
 TS-102|钴绿|Cobalt Green|17A794
 """
 
+    /// 郡士 Mr.Color 系列，C 前缀属于商品身份的一部分。
     private static let mrColor = """
 C1|白色|White|F5F5F0
 C2|黑色|Black|202020
@@ -486,6 +589,7 @@ C97|浅灰|Light Gray|BCC0BB
 C100|酒红|Wine Red|782F41
 """
 
+    /// 郡士水性 Hobby Color 系列，保留独立的 H 色号。
     private static let aqueous = """
 H1|白色|White|F5F5F0
 H2|黑色|Black|202020
@@ -527,6 +631,7 @@ H55|午夜蓝|Midnight Blue|283744
 H56|中蓝|Intermediate Blue|70828C
 """
 
+    /// 郡士 Acrysion 系列，保留独立的 N 色号。
     private static let acrysion = """
 N1|白色|White|F5F5F0
 N2|黑色|Black|202020

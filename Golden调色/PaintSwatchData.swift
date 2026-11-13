@@ -1,11 +1,15 @@
+// 当前屏幕色样及其来源，独立于商品名称和旧版兼容 RGB。
+// 更新色样时同步维护来源清单与目录测试；表内数值属于数字参考，不是实测颜料标准。
 import Foundation
 
+/// 区分第三方色号数据与各厂商色卡取样，以便显示准确的来源说明。
 enum PaintSwatchSource: String, Sendable {
     case encycolorpedia
     case tamiyaChart
     case mrHobbyChart
     case goldenSoFlatSwatch
 
+    /// 可直接展示在色块提示、参考色详情和 AI 输入中的来源限制。
     var note: String {
         switch self {
         case .encycolorpedia:
@@ -20,21 +24,25 @@ enum PaintSwatchSource: String, Sendable {
     }
 }
 
+/// 一条六位十六进制 sRGB 色样及其出处类型。
 struct PaintSwatch: Sendable {
     let hex: String
     let source: PaintSwatchSource
 }
 
+/// 按“系列:色号”检索当前色样；原始出处和取样记录见已有来源清单。
 /// Verified 2026-10-09. These are digital references, not measured paint standards.
 /// See docs/paint-swatch-sources.json for source URLs, hashes, profiles and sampling regions.
 /// Existing catalog tables retain pre-1.0.12 RGB solely for old reference decoding.
 enum PaintSwatchData {
+    /// 返回精确系列与色号的色样，未收录时由调用方决定回退方式。
     static func swatch(series: PaintSeries, code: String) -> PaintSwatch? {
         swatches["\(series.rawValue):\(code)"]
     }
 
+    /// 首次使用时解析并建立索引；系列、来源和 HEX 格式都必须有效。
     private static let swatches: [String: PaintSwatch] = {
-        let entries = table.split(separator: "\n").compactMap { line -> (String, PaintSwatch)? in
+        let entries = (table + "\n" + TamiyaPaintAdditions.swatches).split(separator: "\n").compactMap { line -> (String, PaintSwatch)? in
             let fields = line.split(separator: "|").map(String.init)
             guard fields.count == 4,
                   let series = PaintSeries(rawValue: fields[0]),
@@ -45,6 +53,7 @@ enum PaintSwatchData {
         return Dictionary(uniqueKeysWithValues: entries)
     }()
 
+    /// 每行依次为“系列原始值 | 商品色号 | 六位 HEX | 来源原始值”；组合键必须唯一。
     private static let table = """
 tamiyaEnamel|X-1|000000|encycolorpedia
 tamiyaEnamel|X-4|09337B|encycolorpedia

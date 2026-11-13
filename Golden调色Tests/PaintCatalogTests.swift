@@ -1,13 +1,17 @@
+// 色库与商品参考色回归测试：验证系列身份、原料套装、来源色样及历史配方兼容。
+// 参数化用例对每个当前可选套装重复执行，防止某一套装漏掉同样的约束。
 import Foundation
 import Testing
 @testable import Golden调色
 
+/// 重点保证“目标参考色”与“实际调色原料”始终分开解释。
 struct PaintCatalogTests {
+    /// 目录身份必须包含系列，且不能混入不属于有色颜料的产品。
     @Test
     func testCatalogsKeepSeriesIdentityAndExcludeNonPaintProducts() throws {
         let expectedCounts: [PaintSeries: Int] = [
-            .goldenSoFlat: 12, .goldenFluid: 13, .tamiyaAcrylic: 42, .tamiyaEnamel: 42,
-            .tamiyaLacquer: 32, .tamiyaSpray: 98, .mrColor: 50, .aqueous: 38, .acrysion: 40
+            .goldenSoFlat: 12, .goldenFluid: 15, .tamiyaAcrylic: 101, .tamiyaEnamel: 82,
+            .tamiyaLacquer: 79, .tamiyaSpray: 98, .tamiyaAircraft: 33, .tamiyaPolycarbonate: 60, .mrColor: 50, .aqueous: 38, .acrysion: 40
         ]
         var ids = Set<String>()
         for series in PaintSeries.allCases {
@@ -29,6 +33,87 @@ struct PaintCatalogTests {
         let enamelWhite = try #require(PaintSeries.tamiyaEnamel.paints.first { $0.code == "X-2" })
         #expect(acrylicWhite.id != enamelWhite.id)
     }
+    /// 以官网实际编号范围核对六类田宫颜色，避免按最大号码把空号或无色涂层当作颜色。
+    @Test
+    func testCompleteTamiyaCatalogMatchesVerifiedProductRanges() {
+        let gloss = Array(1...19) + Array(23...28) + Array(31...34)
+        let acrylicFlat = Array(1...28) + Array(49...85) + Array(87...93)
+        let enamelFlat = Array(1...28) + Array(49...66) + [70, 71, 84, 85]
+        let expected: [PaintSeries: Set<String>] = [
+            .tamiyaAcrylic: Set(gloss.map { "X-\($0)" } + acrylicFlat.map { "XF-\($0)" }),
+            .tamiyaEnamel: Set(gloss.map { "X-\($0)" } + enamelFlat.map { "XF-\($0)" }),
+            .tamiyaLacquer: Set((1...85).filter { ![9, 10, 22, 23, 24, 49].contains($0) }.map { "LP-\($0)" }),
+            .tamiyaSpray: Set((1...102).filter { ![13, 65, 79, 80].contains($0) }.map { "TS-\($0)" }),
+            .tamiyaAircraft: Set((1...33).map { "AS-\($0)" }),
+            .tamiyaPolycarbonate: Set((1...63).filter { ![26, 53, 55, 58].contains($0) }.map { "PS-\($0)" } + ["69944"])
+        ]
+        #expect(Set(PaintBrand.tamiya.series) == Set(expected.keys))
+        for (series, codes) in expected {
+            #expect(Set(series.matchingPaints("").map(\.code)) == codes)
+        }
+        #expect(PaintBrand.tamiya.series.reduce(0) { $0 + $1.matchingPaints("").count } == 450)
+        #expect(PaintSeries.tamiyaEnamel.matchingPaints("XF-90").isEmpty)
+        #expect(PaintSeries.tamiyaPolycarbonate.matchingPaints("PS-64").isEmpty)
+        #expect(PaintSeries.tamiyaPolycarbonate.matchingPaints("69944").first?.name == "PS Dark Blue (Special Edition)")
+    }
+
+    /// 用户报告的 XF-85 在两个真实漆系中均可搜索，并能进入 GOLDEN 调色和快照保存。
+    @Test(arguments: [PaintSeries.tamiyaAcrylic, .tamiyaEnamel])
+    func testRubberBlackSearchAndRecipeRoundTrip(_ series: PaintSeries) throws {
+        for search in ["XF-85", "xf85", "橡胶黑", "Rubber Black"] {
+            #expect(series.matchingPaints(search).map(\.code) == ["XF-85"])
+        }
+        let reference = PaintReference(series: series, paintCode: "XF-85")
+        let target = try #require(reference.previewTarget)
+        #expect(target == MixingTarget(red: 35, green: 25, blue: 22))
+        #expect(reference.paint?.hex == "231916")
+        #expect(PaintSwatchData.swatch(series: series, code: "XF-85")?.source == .tamiyaChart)
+        for paintSet in MixingPaintSet.selectable {
+            let prompt = MixingPalette.prompt(for: target, referencePaint: reference, paintSet: paintSet)
+            #expect(prompt.contains(reference.summary))
+            #expect(prompt.contains(reference.previewNote))
+            let recipe = try MixingRecipe(
+                target: target, response: paletteResponse(paintSet: paintSet).base,
+                paintSeries: paintSet.primarySeries, paintSet: paintSet, referencePaint: reference
+            )
+            #expect(try JSONDecoder().decode(MixingRecipe.self, from: JSONEncoder().encode(recipe)) == recipe)
+            #expect(recipe.response.ingredients.allSatisfy { !$0.paintCode.hasPrefix("XF-") })
+        }
+    }
+
+    /// 未获官网确认的旧珐琅色不再供选择；读取旧引用仍保留原来的身份和快照。
+    @Test
+    func testUnverifiedEnamelEntriesStayReadableWithoutAppearingInNewSearches() throws {
+        for code in ["XF-67", "XF-68", "XF-69"] {
+            #expect(PaintSeries.tamiyaEnamel.matchingPaints(code).isEmpty)
+            #expect(PaintSeries.tamiyaAcrylic.matchingPaints(code).map(\.code) == [code])
+            let reference = PaintReference(series: .tamiyaEnamel, paintCode: code)
+            try reference.validate()
+            #expect(reference.paint?.isSelectable == false)
+            #expect(reference.previewNote.contains("当前官方目录未确认"))
+            #expect(try JSONDecoder().decode(PaintReference.self, from: JSONEncoder().encode(reference)) == reference)
+        }
+    }
+
+    /// 新增金属、透明和变色商品的使用限制会传入 AI，并保留 PS 的材料说明。
+    @Test
+    func testExpandedTamiyaEffectsCarryTheirLimitationsIntoPrompts() throws {
+        let cases: [(PaintSeries, String)] = [
+            (.tamiyaAcrylic, "X-11"), (.tamiyaEnamel, "X-27"),
+            (.tamiyaLacquer, "LP-68"), (.tamiyaAircraft, "AS-12"),
+            (.tamiyaPolycarbonate, "PS-46")
+        ]
+        for (series, code) in cases {
+            let reference = PaintReference(series: series, paintCode: code)
+            let target = try #require(reference.previewTarget)
+            #expect(reference.previewNote.contains("不复现金属"))
+            #expect(reference.previewNote.contains("随角度变化"))
+            #expect(MixingPalette.prompt(for: target, referencePaint: reference).contains(reference.previewNote))
+        }
+        #expect(PaintReference(series: .tamiyaPolycarbonate, paintCode: "PS-46").previewNote.contains("聚碳酸酯"))
+    }
+
+    /// 不同目标品牌共用所选 GOLDEN 原料约束，提示词和各层 Schema 应一致。
     @Test(arguments: MixingPaintSet.selectable)
     func testReferencePromptsAndAllSchemasUseOnlyTheSelectedKit(_ paintSet: MixingPaintSet) throws {
         let expectedCodes = Set(paintSet.paints.map(\.code))
@@ -63,7 +148,7 @@ struct PaintCatalogTests {
             #expect(prompt.contains(reference.previewNote))
             prompts.append(prompt)
         }
-        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid13 : .soFlat12
+        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid15 : .soFlat12
         for prompt in prompts {
             #expect(prompt.contains("用户选择的调色原料套装：\(paintSet.title)"))
             #expect(prompt.contains("禁止混入另一套 GOLDEN 原料"))
@@ -76,6 +161,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 外部品牌原料和与参考色不一致的本色目标必须被拒绝。
     @Test
     func testReferenceRecipesRejectForeignPaintsAndMismatchedTargets() throws {
         let reference = PaintReference(series: .mrColor, paintCode: "C13")
@@ -108,6 +194,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 各系列参考色都能构造三色方案，并完整保留其商品身份。
     @Test(arguments: MixingPaintSet.selectable)
     func testEveryReferenceProducesThreeGoldenRecipesAndRetainsItsIdentity(_ paintSet: MixingPaintSet) throws {
         for reference in references {
@@ -124,7 +211,7 @@ struct PaintCatalogTests {
                 #expect(recipe.paintSeries == paintSet.primarySeries)
                 #expect(recipe.referencePaint == reference)
                 #expect(Set(recipe.response.ingredients.map(\.paintCode)) == Set(paintSet.paints.map(\.code)))
-                #expect(recipe.response.ingredients.reduce(0) { $0 + $1.drops } == 200)
+                #expect(recipe.ingredientDrops == (recipe.role == .base ? 200 : (recipe.role == .shadow ? 2 : 6)))
                 #expect(recipe.formattedText.contains("调色用漆：\(paintSet.title)"))
                 #expect(recipe.formattedText.contains(reference.summary))
                 #expect(try JSONDecoder().decode(MixingRecipe.self, from: JSONEncoder().encode(recipe)) == recipe)
@@ -137,6 +224,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 参考色项目重新读取后保留来源，历史配方不被自动扩大原料范围。
     @Test
     func testReferenceProjectsReloadAndLegacyRecipesKeepTheirOriginalPaints() throws {
         let suite = "PaintReferenceTests.\(UUID().uuidString)"
@@ -179,6 +267,7 @@ struct PaintCatalogTests {
         #expect(decoded.formattedText.contains(PaintSeries.tamiyaEnamel.title))
     }
 
+    /// 仅当当前 RGB 仍匹配商品预览时，项目颜色才能重新用作商品参考。
     @Test
     func testCatalogColorCanBeReusedAsReferenceOnlyWhileItsRGBMatches() throws {
         let paint = try #require(PaintSeries.tamiyaAcrylic.paints.first { $0.code == "XF-53" })
@@ -205,6 +294,7 @@ struct PaintCatalogTests {
         #expect(library.color(itemID: project.id, colorID: edited.id)?.mixingRecipe == nil)
     }
 
+    /// 通过假 CLI 核对目标身份被传入，但 Schema 的允许原料始终来自所选套装。
     @Test(arguments: MixingPaintSet.selectable)
     func testCLIUsesReferenceIdentityButAlwaysRequestsTheSelectedKit(_ paintSet: MixingPaintSet) async throws {
         let files = FileManager.default
@@ -265,36 +355,49 @@ struct PaintCatalogTests {
         #expect(try blendPrompt == blendRequest().prompt(paintSet: paintSet))
 
         // A response made for the other kit must never pass the service's decode boundary.
-        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid13 : .soFlat12
+        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid15 : .soFlat12
         try JSONEncoder().encode(paletteResponse(paintSet: otherSet)).write(to: fixtureURL)
         await #expect(throws: MixingError.self) {
             try await CodexMixingService().generate(for: .initial, paintSet: paintSet, configuration: configuration)
         }
     }
 
+    /// Fluid 指定目录恰好包含用户要求的 15 色，包含新增群青蓝与永久浅绿。
     @Test
-    func testFluidCatalogContainsExactlyTheThirteenRequestedColors() {
+    func testFluidCatalogContainsExactlyTheFifteenRequestedColors() {
         let expected = [
             "2009": "Benzimidazolone Yellow Light", "2008": "Benzimidazolone Yellow Medium",
             "2210": "Naphthol Red Light", "2305": "Quinacridone Magenta",
             "2260": "Phthalo Blue (Red Shade)", "2255": "Phthalo Blue (Green Shade)",
             "2270": "Phthalo Green (Blue Shade)", "2275": "Phthalo Green (Yellow Shade)",
             "2040": "Carbon Black", "2380": "Titanium White",
-            "2276": "Pyrrole Orange", "2150": "Dioxazine Purple", "2407": "Yellow Ochre"
+            "2276": "Pyrrole Orange", "2150": "Dioxazine Purple", "2407": "Yellow Ochre",
+            "2400": "Ultramarine Blue", "2250": "Permanent Green Light"
         ]
         #expect(Dictionary(uniqueKeysWithValues: PaintSeries.goldenFluid.paints.map { ($0.code, $0.name) }) == expected)
-        #expect(MixingPaintSet.selectable == [.soFlat12, .fluid13])
+        #expect(MixingPaintSet.selectable == [.soFlat12, .fluid15])
         #expect(MixingPaintSet.defaultSelection == .soFlat12)
         #expect(MixingPaintSet.soFlat12.paints.count == 12)
-        #expect(MixingPaintSet.fluid13.paints.count == 13)
+        #expect(MixingPaintSet.fluid15.paints.count == 15)
         #expect(Set(MixingPaintSet.soFlat12.paints.map(\.series)) == [.goldenSoFlat])
-        #expect(Set(MixingPaintSet.fluid13.paints.map(\.series)) == [.goldenFluid])
+        #expect(Set(MixingPaintSet.fluid15.paints.map(\.series)) == [.goldenFluid])
+        let screenshotColors = [
+            "2008": "Benzimidazolone Yellow Medium", "2210": "Naphthol Red Light",
+            "2400": "Ultramarine Blue", "2250": "Perm Green Light",
+            "2040": "Carbon Black", "2380": "Titanium White"
+        ]
+        for (code, name) in screenshotColors {
+            #expect(PaintSeries.goldenFluid.matchingPaints(name).map(\.code) == [code])
+        }
+        #expect(PaintSeries.goldenFluid.matchingPaints("群青蓝").first?.code == "2400")
+        #expect(PaintSeries.goldenFluid.matchingPaints("永久浅绿").first?.code == "2250")
     }
 
+    /// 每个 Fluid 原料都可用于有效配方，输出名称必须保留其系列。
     @Test
     func testEveryFluidColorIsAcceptedAndNamedWithItsSeries() throws {
         for paint in PaintSeries.goldenFluid.paints {
-            let ingredients = MixingPaintSet.fluid13.paints.map {
+            let ingredients = MixingPaintSet.fluid15.paints.map {
                 PaintDose(paintCode: $0.code, drops: $0.code == paint.code ? 200 : 0)
             }
             let response = MixingResponse(
@@ -302,10 +405,10 @@ struct PaintCatalogTests {
                 steps: [MixingStep(paintCode: paint.code, drops: 200, instruction: "取色并充分搅匀。")],
                 notes: "测试指定 Fluid 颜色能作为原料。"
             )
-            let recipe = try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: .fluid13)
-            #expect(recipe.paintSet == .fluid13)
+            let recipe = try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: .fluid15)
+            #expect(recipe.paintSet == .fluid15)
             #expect(recipe.drops(for: paint.code) == 200)
-            #expect(recipe.displayedPaints.count == 13)
+            #expect(recipe.displayedPaints.count == 15)
             #expect(recipe.displayedPaints.contains(paint))
             #expect(!recipe.formattedText.contains("SoFlat"))
             #expect(recipe.formattedText.contains("\(paint.ingredientName) #\(paint.code)：200 滴"))
@@ -313,6 +416,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 各套装统一拒绝缺色号、重复色号、跨套装和无效滴数。
     @Test(arguments: MixingPaintSet.selectable)
     func testKitRecipesRejectMissingDuplicateOtherKitAndInvalidDoses(_ paintSet: MixingPaintSet) throws {
         let valid = paletteResponse(paintSet: paintSet).base
@@ -323,7 +427,7 @@ struct PaintCatalogTests {
         var otherKit = valid.ingredients
         otherKit[last] = PaintDose(paintCode: paintSet == .soFlat12 ? "2380" : "6755", drops: 0)
         var unrequested = valid.ingredients
-        unrequested[last] = PaintDose(paintCode: "2400", drops: 0)
+        unrequested[last] = PaintDose(paintCode: "2005", drops: 0)
         var negative = valid.ingredients
         negative[last] = PaintDose(paintCode: lastCode, drops: -1)
         var wrongTotal = valid.ingredients
@@ -334,7 +438,7 @@ struct PaintCatalogTests {
                 try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: paintSet)
             }
         }
-        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid13 : .soFlat12
+        let otherSet: MixingPaintSet = paintSet == .soFlat12 ? .fluid15 : .soFlat12
         #expect(throws: MixingError.self) {
             try MixingPalette(target: .initial, response: paletteResponse(paintSet: otherSet), paintSet: paintSet)
         }
@@ -349,31 +453,34 @@ struct PaintCatalogTests {
         }
     }
 
+    /// Fluid 操作步骤的逐色累计量必须与其自身用量表一致。
     @Test
     func testFluidStepAmountsMustMatchTheirOwnSeriesDoses() {
-        let valid = paletteResponse(paintSet: .fluid13).base
+        let valid = paletteResponse(paintSet: .fluid15).base
         let steps = valid.steps.map {
             let adjustment = $0.paintCode == "2380" ? 1 : -1
             return MixingStep(paintCode: $0.paintCode, drops: $0.drops + adjustment, instruction: $0.instruction)
         }
         let response = MixingResponse(name: valid.name, ingredients: valid.ingredients, steps: steps, notes: valid.notes)
         #expect(throws: MixingError.self) {
-            try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: .fluid13)
+            try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: .fluid15)
         }
         let wrongSeries = MixingResponse(
             name: valid.name, ingredients: valid.ingredients,
             steps: [MixingStep(paintCode: "6755", drops: 200, instruction: "搅匀")], notes: valid.notes
         )
         #expect(throws: MixingError.self) {
-            try MixingRecipe.decode(JSONEncoder().encode(wrongSeries), for: .initial, paintSet: .fluid13)
+            try MixingRecipe.decode(JSONEncoder().encode(wrongSeries), for: .initial, paintSet: .fluid15)
         }
     }
 
+    /// 三色层次校验同样检查 Fluid 用量，不能只改 RGB 而照抄本色配方。
     @Test
     func testToneValidationAlsoComparesFluidDoses() throws {
-        func recipe(white: Int) -> MixingResponse {
-            let ingredients = MixingPaintSet.fluid13.paints.map {
-                PaintDose(paintCode: $0.code, drops: $0.code == "2380" ? white : ($0.code == "2040" ? 200 - white : 0))
+        /// 构造不同白色滴数的 Fluid 配方，用于比较本色与伴随色用量。
+        func recipe(white: Int, total: Int = 200) -> MixingResponse {
+            let ingredients = MixingPaintSet.fluid15.paints.map {
+                PaintDose(paintCode: $0.code, drops: $0.code == "2380" ? white : ($0.code == "2040" ? total - white : 0))
             }
             return MixingResponse(
                 name: "Fluid 灰色", ingredients: ingredients,
@@ -382,18 +489,19 @@ struct PaintCatalogTests {
                 }, notes: "三种深浅分别调制。"
             )
         }
-        let shadow = MixingToneResponse(target: MixingTarget(red: 64, green: 80, blue: 64), recipe: recipe(white: 80))
-        let highlight = MixingToneResponse(target: MixingTarget(red: 220, green: 235, blue: 220), recipe: recipe(white: 190))
+        let shadow = MixingToneResponse(target: MixingTarget(red: 64, green: 80, blue: 64), recipe: recipe(white: 0, total: 2))
+        let highlight = MixingToneResponse(target: MixingTarget(red: 220, green: 235, blue: 220), recipe: recipe(white: 6, total: 6))
         let base = recipe(white: 150)
-        let palette = try MixingPalette(target: .initial, response: MixingPaletteResponse(base: base, shadow: shadow, highlight: highlight), paintSet: .fluid13)
+        let palette = try MixingPalette(target: .initial, response: MixingPaletteResponse(base: base, shadow: shadow, highlight: highlight), paintSet: .fluid15)
         #expect(palette.recipes.allSatisfy { $0.drops(for: "6755") == 0 && $0.drops(for: "6745") == 0 })
-        #expect(palette.recipes.map { $0.drops(for: "2380") } == [150, 80, 190])
+        #expect(palette.recipes.map { $0.drops(for: "2380") } == [150, 0, 6])
         let repeated = MixingToneResponse(target: shadow.target, recipe: base)
         #expect(throws: MixingError.self) {
-            try MixingPalette(target: .initial, response: MixingPaletteResponse(base: base, shadow: repeated, highlight: highlight), paintSet: .fluid13)
+            try MixingPalette(target: .initial, response: MixingPaletteResponse(base: base, shadow: repeated, highlight: highlight), paintSet: .fluid15)
         }
     }
 
+    /// 旧 SoFlat 配方始终恢复原来的 12 色集合。
     @Test
     func testLegacySoFlatRecipesKeepTheirOriginalTwelveColors() throws {
         let response = paletteResponse().base
@@ -410,6 +518,64 @@ struct PaintCatalogTests {
         #expect(newRecipe.paintSet == .soFlat12)
     }
 
+    /// 旧 Fluid 13 色配方可读，重新发起调色时才映射到当前 15 色套装。
+    @Test
+    func testLegacyFluidThirteenColorRecipesStillLoadAndUseFifteenColorsForNewMixing() throws {
+        // Use the original saved code list, independent of the current catalog.
+        let originalCodes = [
+            "2009", "2008", "2210", "2305", "2260", "2255", "2270",
+            "2275", "2040", "2380", "2276", "2150", "2407"
+        ]
+        let response = MixingResponse(
+            name: "旧版 Fluid 配方",
+            ingredients: originalCodes.map {
+                PaintDose(paintCode: $0, drops: $0 == "2380" ? 150 : ($0 == "2040" ? 50 : 0))
+            },
+            steps: [
+                MixingStep(paintCode: "2380", drops: 150, instruction: "加入钛白。"),
+                MixingStep(paintCode: "2040", drops: 50, instruction: "加入炭黑并搅匀。")
+            ],
+            notes: "保留旧版原料与用量。"
+        )
+        let object: [String: Any] = [
+            "target": ["red": 128, "green": 160, "blue": 128],
+            "response": try JSONSerialization.jsonObject(with: JSONEncoder().encode(response)),
+            "paintSeries": "goldenFluid", "paintSet": "fluid13"
+        ]
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let restored = try JSONDecoder().decode(MixingRecipe.self, from: data)
+        #expect(restored.paintSet == .fluid13)
+        #expect(restored.displayedPaints.map(\.code) == originalCodes)
+        #expect(restored.response == response)
+        #expect(restored.paintSetForNewMixing == .fluid15)
+        #expect(!restored.formattedText.contains("#2400"))
+        #expect(!restored.formattedText.contains("#2250"))
+        #expect(try JSONDecoder().decode(MixingRecipe.self, from: JSONEncoder().encode(restored)) == restored)
+        #expect(!MixingPaintSet.selectable.contains(.fluid13))
+        #expect(throws: MixingError.self) { try MixingPalette.outputSchema(paintSet: .fluid13) }
+        #expect(throws: MixingError.self) {
+            try MixingRecipe.decode(JSONEncoder().encode(response), for: .initial, paintSet: .fluid15)
+        }
+
+        let suite = "FluidCatalogExpansionTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let saved = try JSONSerialization.data(withJSONObject: [[
+            "text": "旧版 Fluid 项目",
+            "colors": [["red": 128, "green": 160, "blue": 128, "mixingRecipe": object]]
+        ]])
+        defaults.set(saved, forKey: RecipeLibrary.itemsKey)
+        var library = RecipeLibrary(defaults: defaults)
+        #expect(!library.isReadOnly)
+        #expect(defaults.data(forKey: RecipeLibrary.itemsKey) == saved)
+        let project = try #require(library.items.first)
+        #expect(project.colors.first?.mixingRecipe == restored)
+        let renamed = library.renameItem(id: project.id, to: "继续使用旧配方")
+        #expect(renamed)
+        #expect(RecipeLibrary(defaults: defaults).items.first?.colors.first?.mixingRecipe == restored)
+    }
+
+    /// 旧 25 色组合保留阅读与展示能力，但不能用作新的生成请求。
     @Test
     func testLegacyCombinedRecipesRemainReadableButCannotBeRequested() throws {
         let response = paletteResponse(paintSet: .soFlatAndFluid25).base
@@ -440,9 +606,10 @@ struct PaintCatalogTests {
     }
 
 
+    /// 固定预期值核对 Fluid 屏幕色与已采集的官方调色器数据一致。
     @Test
     func testFluidSwatchesMatchOfficialMixerSRGB() throws {
-        // Captured 2026-10-09 from mixerPaintData/index.json, paintColor.srgb.
+        // Captured 2026-10-09; added 2400/2250 on 2026-11-11 from mixerPaintData/index.json, paintColor.srgb.
         // Product codes are Fluid 2xxx; the source IDs are the corresponding 1xxx.
         let expected: [String: [Int]] = [
             "2009": [246, 207, 0],
@@ -457,7 +624,9 @@ struct PaintCatalogTests {
             "2380": [247, 247, 242],
             "2276": [243, 60, 0],
             "2150": [40, 31, 29],
-            "2407": [178, 121, 47]
+            "2407": [178, 121, 47],
+            "2400": [25, 18, 62],
+            "2250": [0, 118, 57]
         ]
         #expect(Set(PaintSeries.goldenFluid.paints.map(\.code)) == Set(expected.keys))
         for paint in PaintSeries.goldenFluid.paints {
@@ -471,6 +640,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// SoFlat 使用其自身官方色样，不能被 Fluid 的同名色替换。
     @Test
     func testSoFlatSwatchesUseItsOwnOfficialSRGBImages() {
         // Official 6xxx SoFlat brush-outs, ICC sRGB, white-backed 50x40 pixel median.
@@ -498,6 +668,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 商品预览快照能跨色库更新保存，同时继续拒绝错误的目标 RGB。
     @Test
     func testReferenceSnapshotSurvivesCatalogChangesWithoutWeakeningTargetValidation() throws {
         // A saved preview may differ from the current catalog; retain it through later saves.
@@ -526,6 +697,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 没有快照的旧 Fluid 商品引用在所有三色角色中恢复同一个历史参考色。
     @Test(arguments: [MixingPaintSet.soFlat12, .fluid13, .soFlatAndFluid25])
     func testLegacyFluidReferenceProjectsRetainAllThreeTones(_ paintSet: MixingPaintSet) throws {
         let oldRGB: [String: [Int]] = [
@@ -546,7 +718,7 @@ struct PaintCatalogTests {
         let suite = "OfficialRGBMigrationTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let fixture = paletteResponse(paintSet: paintSet)
+        let fixture = paletteResponse(paintSet: paintSet, independentTones: true)
         let responses: [MixingRole: MixingResponse] = [
             .base: fixture.base, .shadow: fixture.shadow.recipe, .highlight: fixture.highlight.recipe
         ]
@@ -612,6 +784,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 无效预览快照和不匹配的历史目标不能利用兼容路径绕过校验。
     @Test
     func testInvalidReferenceSnapshotsAndLegacyTargetMismatchesAreRejected() throws {
         for channel in [-1, 256] {
@@ -645,6 +818,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// TS 商品色支持色号搜索，保存后仍保留喷罐系列身份。
     @Test
     func testTamiyaSprayCatalogSupportsSearchAndPersistentReferenceIdentity() throws {
         let excludedNumbers = Set([13, 65, 79, 80])
@@ -678,6 +852,7 @@ struct PaintCatalogTests {
         #expect(MixingPaintSet.selectable.allSatisfy { !$0.series.contains(series) })
     }
 
+    /// 特殊效果喷罐只作为颜色参考，界面说明与提示词保留无法复现效果的限制。
     @Test
     func testTamiyaSprayEffectColorsRemainReferencesWithPreviewLimitations() throws {
         for code in ["TS-36", "TS-50", "TS-71", "TS-97"] {
@@ -705,6 +880,7 @@ struct PaintCatalogTests {
         }
     }
 
+    /// 带出处的品牌色样覆盖目录，并按具体漆系分别读取。
     @Test
     func testSourcedBrandSwatchesAreCompleteAndKeepTheirSeries() throws {
         let expected: [(PaintSeries, String, String, PaintSwatchSource)] = [
@@ -738,18 +914,19 @@ struct PaintCatalogTests {
                 #expect(try JSONDecoder().decode(PaintReference.self, from: JSONEncoder().encode(reference)) == reference)
             }
         }
-        #expect(sourceCounts == [.encycolorpedia: 35, .tamiyaChart: 179, .mrHobbyChart: 128, .goldenSoFlatSwatch: 12])
+        #expect(sourceCounts == [.encycolorpedia: 35, .tamiyaChart: 418, .mrHobbyChart: 128, .goldenSoFlatSwatch: 12])
         #expect(PaintSwatchData.swatch(series: .goldenFluid, code: "2380") == nil)
         #expect(PaintSwatchData.swatch(series: .mrColor, code: "H53") == nil)
     }
 
+    /// 更新来源 RGB 后，旧项目各色阶的原目标和用量仍可恢复。
     @Test(arguments: PaintSeries.allCases.filter { $0 != .goldenFluid })
     func testPreSRGBReferenceProjectsKeepOriginalTargetsAndDoses(_ series: PaintSeries) throws {
         let defaults = try #require(UserDefaults(suiteName: "SRGBMigration.\(UUID().uuidString)"))
         defer {
             defaults.removeObject(forKey: RecipeLibrary.itemsKey)
         }
-        let fixture = paletteResponse()
+        let fixture = paletteResponse(independentTones: true)
         let responses: [MixingRole: MixingResponse] = [
             .base: fixture.base, .shadow: fixture.shadow.recipe, .highlight: fixture.highlight.recipe
         ]
@@ -811,10 +988,14 @@ struct PaintCatalogTests {
         }
     }
 
+    // MARK: - 跨系列样本与固定响应
+    /// 覆盖各品牌系列及新增 Fluid 颜色的代表性商品引用。
     private var references: [PaintReference] {
         [
             PaintReference(series: .goldenSoFlat, paintCode: "6610"),
             PaintReference(series: .goldenFluid, paintCode: "2276"),
+            PaintReference(series: .goldenFluid, paintCode: "2400"),
+            PaintReference(series: .goldenFluid, paintCode: "2250"),
             PaintReference(series: .tamiyaAcrylic, paintCode: "XF-53"),
             PaintReference(series: .tamiyaEnamel, paintCode: "XF-53"),
             PaintReference(series: .tamiyaLacquer, paintCode: "LP-34"),
@@ -825,6 +1006,7 @@ struct PaintCatalogTests {
         ]
     }
 
+    /// 提取单份配方 Schema 的色号枚举，直接核对 AI 可使用的原料集合。
     private func allowedCodes(in schema: [String: Any]) throws -> Set<String> {
         let properties = try #require(schema["properties"] as? [String: Any])
         let ingredients = try #require(properties["ingredients"] as? [String: Any])
@@ -833,6 +1015,7 @@ struct PaintCatalogTests {
         return Set(try #require(itemProperties["paintCode"] as? [String: Any])["enum"] as? [String] ?? [])
     }
 
+    /// 将一份配方包装成可持久化的项目颜色，复用其目标通道。
     private func color(for recipe: MixingRecipe) -> ColorInfo {
         ColorInfo(
             red: Double(recipe.target.red), green: Double(recipe.target.green), blue: Double(recipe.target.blue),
@@ -840,21 +1023,23 @@ struct PaintCatalogTests {
         )
     }
 
-    private func paletteResponse(paintSet: MixingPaintSet = .soFlat12) -> MixingPaletteResponse {
-        func recipe(white: Int) -> MixingResponse {
+    /// 构造满足不同套装计量规则的三色响应，兼容旧组合套装的测试需要。
+    private func paletteResponse(paintSet: MixingPaintSet = .soFlat12, independentTones: Bool = false) -> MixingPaletteResponse {
+        /// 按指定白色总量分配原料，步骤同步采用实际非零用量。
+        func recipe(white: Int, total: Int = 200) -> MixingResponse {
             let ingredients = paintSet.paints.map {
                 let drops: Int
                 if paintSet == .soFlatAndFluid25 {
                     switch $0.code {
                     case "6755": drops = white / 2
                     case "2380": drops = white - white / 2
-                    case "2040": drops = 200 - white
+                    case "2040": drops = total - white
                     default: drops = 0
                     }
                 } else {
-                    let whiteCode = paintSet == .fluid13 ? "2380" : "6755"
-                    let blackCode = paintSet == .fluid13 ? "2040" : "6745"
-                    drops = $0.code == whiteCode ? white : ($0.code == blackCode ? 200 - white : 0)
+                    let whiteCode = paintSet.primarySeries == .goldenFluid ? "2380" : "6755"
+                    let blackCode = paintSet.primarySeries == .goldenFluid ? "2040" : "6745"
+                    drops = $0.code == whiteCode ? white : ($0.code == blackCode ? total - white : 0)
                 }
                 return PaintDose(paintCode: $0.code, drops: drops)
             }
@@ -867,12 +1052,14 @@ struct PaintCatalogTests {
         }
         return MixingPaletteResponse(
             base: recipe(white: 150),
-            shadow: MixingToneResponse(target: MixingTarget(red: 16, green: 16, blue: 16), recipe: recipe(white: 80)),
-            // Updated official light-gray references need a brighter fixture to preserve tone contrast.
-            highlight: MixingToneResponse(target: MixingTarget(red: 255, green: 255, blue: 255), recipe: recipe(white: 190))
+            // 使用边界目标确保深蓝与浅灰参考均有足够层次，避免来源测试被明度阈值干扰。
+            // Deep ultramarine and light-gray references need boundary targets for sufficient contrast.
+            shadow: MixingToneResponse(target: MixingTarget(red: 0, green: 0, blue: 0), recipe: recipe(white: independentTones ? 80 : 0, total: independentTones ? 200 : 2)),
+            highlight: MixingToneResponse(target: MixingTarget(red: 255, green: 255, blue: 255), recipe: recipe(white: independentTones ? 190 : 6, total: independentTones ? 200 : 6))
         )
     }
 
+    /// 创建占比合计不为 100 的简单输入，以核对合色路径的 Schema。
     private func blendRequest() throws -> ColorBlendRequest {
         try ColorBlendRequest(sources: [
             ColorBlendSource(target: MixingTarget(red: 255, green: 0, blue: 0), percentage: 40),

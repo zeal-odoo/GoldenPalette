@@ -1,9 +1,14 @@
+// 调色领域与 CLI 回归测试：涵盖用量、三色明度、配置、进程取消、存档及比例合色。
+// 仅用固定响应、临时偏好和可控子进程验证行为，不依赖真实模型输出。
 import Foundation
 import Testing
 import Darwin
 @testable import Golden调色
 
+/// 将业务约束与外部调用边界一并验证，避免只通过 JSON 解码就接受配方。
 struct MixingTests {
+    // MARK: - 输入、计量与 CLI 参数
+    /// 高推理强度应获得更长等待时间，传给 CLI 的强度值保持用户选择。
     @Test
     func testMaxReasoningHasTimeToFinishWithoutChangingItsEffort() throws {
         for effort in [AIReasoningEffort.max, .ultra] {
@@ -16,6 +21,7 @@ struct MixingTests {
         #expect(AIReasoningEffort.high.generationTimeout == 240)
     }
 
+    /// 超时提示须反映当前请求实际使用的等待上限。
     @Test
     func testTimeoutMessageReportsTheActualWaitingLimit() {
         let error = MixingError.timedOut(after: AIReasoningEffort.max.generationTimeout)
@@ -23,6 +29,7 @@ struct MixingTests {
         #expect(!error.localizedDescription.contains("4 分钟"))
     }
 
+    /// 最初指定的 SoFlat 12 色不能因目录扩展而改变。
     @Test
     func testOriginalSoFlatPaletteRetainsTheTwelveRequestedPaints() {
         #expect(GoldenPaint.all.map(\.code) == [
@@ -31,6 +38,7 @@ struct MixingTests {
         ])
     }
 
+    /// RGB 输入只接受三个完整的 0...255 整数通道。
     @Test
     func testRGBEntryRejectsInvalidOrIncompleteChannels() {
         #expect(MixingTarget(redText: "0", greenText: " 255 ", blueText: "128")?.green == 255)
@@ -39,6 +47,7 @@ struct MixingTests {
         }
     }
 
+    /// 同一颜料可以分多步加入，只要累计量与用量表一致。
     @Test
     func testValidRecipeCanSplitAPaintAcrossSteps() throws {
         let steps = [
@@ -54,6 +63,7 @@ struct MixingTests {
         #expect(recipe.formattedText.contains("RGB 128, 160, 128"))
     }
 
+    /// 总量错误直接拒绝，不能偷偷缩放成 200 滴。
     @Test
     func testWrongTotalIsRejectedInsteadOfSilentlyRescaled() {
         for drops in [198, 200] {
@@ -64,6 +74,7 @@ struct MixingTests {
         }
     }
 
+    /// 检查遗漏、重复、未知色号及负滴数等无效用量表。
     @Test
     func testMissingDuplicateUnknownAndNegativePaintDosesAreRejected() {
         var duplicate = doses()
@@ -79,6 +90,7 @@ struct MixingTests {
         }
     }
 
+    /// 每种原料的步骤累计量都必须等于表中用量，不能只检查总和。
     @Test
     func testStepDosesMustMatchEveryPaintInTheTable() {
         let mismatched = [
@@ -93,6 +105,7 @@ struct MixingTests {
         }
     }
 
+    /// 小数滴数和不符合结构的 AI 文本不能被当作有效配方。
     @Test
     func testFractionalDropsAndMalformedAIOutputAreRejected() throws {
         let encoded = try JSONEncoder().encode(response())
@@ -108,6 +121,7 @@ struct MixingTests {
         }
     }
 
+    /// 模型及只读执行参数必须明确传递，不能依赖本机 CLI 默认配置。
     @Test
     func testCLIInvocationPinsRequestedModelAndReadOnlyExecution() {
         let directory = URL(fileURLWithPath: "/tmp/path with spaces")
@@ -116,6 +130,7 @@ struct MixingTests {
             output: directory.appendingPathComponent("recipe.json"),
             directory: directory
         )
+        /// 按独立参数查找标志后的值，避免把参数数组误当成 shell 字符串。
         func value(after flag: String) -> String? {
             guard let index = arguments.firstIndex(of: flag), index + 1 < arguments.count else { return nil }
             return arguments[index + 1]
@@ -130,6 +145,7 @@ struct MixingTests {
         #expect(arguments.last == "-")
     }
 
+    /// 图形界面环境应保留自定义路径，并补足 Homebrew 和 node 查找位置。
     @Test
     func testGUIEnvironmentCanFindHomebrewAndCustomNodeInstallations() {
         let customCLI = URL(fileURLWithPath: "/Users/example/.nvm/versions/node/v24/bin/codex")
@@ -143,6 +159,8 @@ struct MixingTests {
         #expect(environment["CODEX_HOME"] == "/Users/example/.codex")
     }
 
+    // MARK: - 配方保存与历史迁移
+    /// 配方往返存储保留每种用量与操作步骤。
     @Test
     func testAIRecipeSavesAndReloadsWithAllDosesAndSteps() throws {
         try withDefaults { defaults in
@@ -162,6 +180,7 @@ struct MixingTests {
         }
     }
 
+    /// 编辑目标 RGB 后不能继续关联已经不匹配的旧 AI 配方。
     @Test
     func testEditingTargetDoesNotKeepAnUnrelatedAIRecipe() throws {
         let palette = try MixingPalette(target: .initial, response: paletteResponse())
@@ -182,6 +201,7 @@ struct MixingTests {
         #expect(library.color(itemID: itemID, colorID: color.id)?.mixingRecipe == nil)
     }
 
+    /// 从旧沙盒迁移只复制有效数据，不删除原偏好文件。
     @Test
     func testOldSandboxRecipesAreCopiedWithoutRemovingTheOriginal() throws {
         try withDefaults { defaults in
@@ -196,6 +216,7 @@ struct MixingTests {
         }
     }
 
+    /// 已存在当前存档时不以旧容器数据覆盖。
     @Test
     func testCurrentRecipesTakePriorityOverLegacyContainer() throws {
         try withDefaults { defaults in
@@ -210,6 +231,7 @@ struct MixingTests {
         }
     }
 
+    /// 损坏的旧存档触发保护，不写入空库覆盖原内容。
     @Test
     func testCorruptLegacyRecipesAreNeverOverwritten() throws {
         try withDefaults { defaults in
@@ -224,6 +246,8 @@ struct MixingTests {
         }
     }
 
+    // MARK: - 子进程生命周期
+    /// 超时后子进程必须退出并被回收，不能留下后台进程。
     @Test
     func testTimedOutProcessIsTerminatedAndReaped() async throws {
         try await withProcessFiles { directory, input, log, logURL in
@@ -241,6 +265,7 @@ struct MixingTests {
         }
     }
 
+    /// Swift 任务取消需要传递到对应 CLI 子进程。
     @Test
     func testCancellingARequestStopsItsProcess() async throws {
         try await withProcessFiles { directory, input, log, logURL in
@@ -262,6 +287,8 @@ struct MixingTests {
         }
     }
 
+    // MARK: - 三色完整性与明度层次
+    /// 本色保持输入目标，三份配方分别执行完整校验。
     @Test
     func testThreeToneResponseKeepsTheInputBaseAndValidatesEachRecipe() throws {
         let data = try JSONEncoder().encode(paletteResponse())
@@ -272,14 +299,19 @@ struct MixingTests {
         #expect(palette.highlight.target.relativeLuminance > palette.base.target.relativeLuminance)
         for recipe in palette.recipes {
             #expect(recipe.response.ingredients.count == 12)
-            #expect(recipe.response.ingredients.reduce(0) { $0 + $1.drops } == 200)
+            #expect(recipe.ingredientDrops == (recipe.role == .base ? 200 : (recipe.role == .shadow ? 2 : 6)))
         }
-        #expect(palette.formattedText.contains("三份共 600 滴"))
+        #expect(palette.shadow.basePortion?.drops == 20)
+        #expect(palette.highlight.basePortion?.drops == 20)
+        #expect(palette.totalPaintDrops == 208)
+        #expect(palette.remainingBaseDrops == 160)
+        #expect(palette.formattedText.contains("共用原料 208 滴"))
         for role in MixingRole.allCases {
             #expect(palette.formattedText.contains("\(role.title) ·"))
         }
     }
 
+    /// 缺少任一色阶的响应不能被降级接受为完整三色方案。
     @Test
     func testMissingToneCannotBeMistakenForACompletePalette() throws {
         let data = try JSONEncoder().encode(paletteResponse())
@@ -294,8 +326,9 @@ struct MixingTests {
         }
     }
 
+    /// 本色仍必须为 200 滴，伴随色则不能把一大份独立配方当作追加量。
     @Test
-    func testEveryToneMustHaveItsOwnTwoHundredDrops() {
+    func testBaseMustHaveTwoHundredDropsAndTonesMustUseSmallAdditions() {
         let valid = paletteResponse()
         let bad = response(ingredients: doses(white: 198))
         let badShadow = MixingToneResponse(target: valid.shadow.target, recipe: bad)
@@ -312,6 +345,7 @@ struct MixingTests {
         }
     }
 
+    /// 阴影必须更暗、高光必须更亮，方向反转或没有变化都应失败。
     @Test
     func testReversedOrIdenticalToneBrightnessIsRejected() {
         let base = MixingTarget.initial
@@ -329,6 +363,7 @@ struct MixingTests {
         }
     }
 
+    /// 核对屏幕预览 L* 的暗色和中间调计算，为层次阈值提供依据。
     @Test
     func testPreviewLightnessHandlesDarkAndMidtoneSwatches() {
         let samples: [(Int, Double)] = [(0, 0), (10, 2.741748), (25, 8.757011), (128, 53.585013), (255, 100)]
@@ -342,6 +377,7 @@ struct MixingTests {
         #expect(green.perceptualLightness > blue.perceptualLightness)
     }
 
+    /// 原料滴数不同仍不足以证明层次明显，目标明度差也必须达标。
     @Test
     func testSubtleShadowsAndHighlightsAreRejectedDespiteDistinctDoses() throws {
         for difference in [1.0, 15.0, 30.0] {
@@ -356,18 +392,19 @@ struct MixingTests {
         }
     }
 
+    /// 达到应用规定的最低 L* 差距时允许通过，避免阈值边界误判。
     @Test
     func testModerateContrastPassesAtTheMinimumLightnessDifference() throws {
         let base = MixingTarget(red: 128, green: 128, blue: 128)
-        let shadow = MixingTarget(red: 90, green: 90, blue: 90)
-        let highlight = MixingTarget(red: 168, green: 168, blue: 168)
+        let shadow = MixingTarget(red: 83, green: 83, blue: 83)
+        let highlight = MixingTarget(red: 176, green: 176, blue: 176)
         let palette = try MixingPalette(target: base, response: paletteResponse(shadow: shadow, highlight: highlight))
         #expect(palette.base.target == base)
         #expect(palette.shadow.target == shadow)
         #expect(palette.highlight.target == highlight)
-        // These adjacent RGB values fall just below the 15-point minimum.
-        let subtleShadow = MixingTarget(red: 91, green: 91, blue: 91)
-        let subtleHighlight = MixingTarget(red: 167, green: 167, blue: 167)
+        // 相邻灰阶落在新的 18 点最低差距以下，必须拒绝。
+        let subtleShadow = MixingTarget(red: 84, green: 84, blue: 84)
+        let subtleHighlight = MixingTarget(red: 175, green: 175, blue: 175)
         for response in [
             paletteResponse(shadow: subtleShadow, highlight: highlight),
             paletteResponse(shadow: shadow, highlight: subtleHighlight)
@@ -378,6 +415,7 @@ struct MixingTests {
         }
     }
 
+    /// 接近黑白边界时按剩余明度空间判断，而非要求无法达到的固定差值。
     @Test
     func testNearBlackAndWhiteUseTheRemainingLightnessRange() throws {
         let middle = MixingTarget(red: 128, green: 128, blue: 128)
@@ -395,6 +433,7 @@ struct MixingTests {
         }
     }
 
+    /// 靠近边界仍需使用足够的剩余空间，不能接受任意微小变化。
     @Test
     func testNearBoundaryDoesNotPermitAnArbitrarilySmallDifference() {
         let dark = MixingTarget(red: 32, green: 32, blue: 32)
@@ -409,6 +448,7 @@ struct MixingTests {
         }
     }
 
+    /// 商品参考和比例合色路径也必须经过相同的三色对比校验。
     @Test
     func testReferenceAndBlendResponsesRejectInsufficientToneContrast() throws {
         for reference in [
@@ -436,6 +476,7 @@ struct MixingTests {
         }
     }
 
+    /// 新生成规则变严格后，历史单份浅阴影配方仍应可读取。
     @Test
     func testPreviouslySavedSubtleShadowRemainsReadable() throws {
         let recipe = try MixingRecipe(
@@ -446,6 +487,7 @@ struct MixingTests {
         #expect(try JSONDecoder().decode(MixingRecipe.self, from: saved) == recipe)
     }
 
+    /// 仅修改目标 RGB 标签不能掩盖阴影或高光照抄本色用量。
     @Test
     func testDistinctRGBLabelsCannotHideIdenticalPaintFormulas() {
         let valid = paletteResponse()
@@ -459,6 +501,7 @@ struct MixingTests {
         }
     }
 
+    /// 纯黑阴影和纯白高光允许保持对应色域边界。
     @Test
     func testPureBlackAndWhiteAllowTheMatchingBoundaryTone() throws {
         let black = MixingTarget(red: 0, green: 0, blue: 0)
@@ -466,27 +509,28 @@ struct MixingTests {
         let middle = MixingTarget(red: 128, green: 128, blue: 128)
         let dark = toneRecipe(white: 0)
         let light = toneRecipe(white: 200)
-        let middleRecipe = toneRecipe(white: 100)
+        let noAddition = additionRecipe(white: 0, black: 0)
         let blackPalette = try MixingPalette(
             target: black,
             response: MixingPaletteResponse(
                 base: dark,
-                shadow: MixingToneResponse(target: black, recipe: dark),
-                highlight: MixingToneResponse(target: middle, recipe: middleRecipe)
+                shadow: MixingToneResponse(target: black, recipe: noAddition),
+                highlight: MixingToneResponse(target: middle, recipe: additionRecipe(white: 6, black: 0))
             )
         )
         let whitePalette = try MixingPalette(
             target: white,
             response: MixingPaletteResponse(
                 base: light,
-                shadow: MixingToneResponse(target: middle, recipe: middleRecipe),
-                highlight: MixingToneResponse(target: white, recipe: light)
+                shadow: MixingToneResponse(target: middle, recipe: additionRecipe(white: 0, black: 2)),
+                highlight: MixingToneResponse(target: white, recipe: noAddition)
             )
         )
         #expect(blackPalette.shadow.target.isBlack)
         #expect(whitePalette.highlight.target.isWhite)
     }
 
+    /// AI 输出越界 RGB 时应拒绝响应，不使用 UI 输入的夹紧逻辑修正。
     @Test
     func testInvalidGeneratedRGBIsRejectedWithoutClamping() throws {
         let data = try JSONEncoder().encode(paletteResponse())
@@ -500,6 +544,8 @@ struct MixingTests {
         }
     }
 
+    // MARK: - 三色保存、设置与项目归属
+    /// 三份结果一起加入项目，重载后保留各自角色。
     @Test
     func testThreeRecipesSaveTogetherAndKeepTheirRolesAfterReload() throws {
         try withDefaults { defaults in
@@ -522,6 +568,7 @@ struct MixingTests {
         }
     }
 
+    /// 早期缺少 role 字段的单份配方按本色恢复。
     @Test
     func testOldAIRecipeWithoutARoleStillDecodesAsBaseColor() throws {
         let recipe = try MixingRecipe(target: .initial, response: response())
@@ -536,6 +583,7 @@ struct MixingTests {
         #expect(decoded.role == .base)
     }
 
+    /// 自定义模型、推理强度及原有 CLI 路径可正确往返偏好。
     @Test
     func testAISettingsRetainCustomModelEffortAndExistingCLIPath() throws {
         try withDefaults { defaults in
@@ -549,6 +597,7 @@ struct MixingTests {
         }
     }
 
+    /// 空模型不能启动请求，有效模型和路径会去除首尾空白。
     @Test
     func testEmptyModelCannotStartAndWhitespaceIsTrimmed() throws {
         var configuration = AIConfiguration()
@@ -562,6 +611,7 @@ struct MixingTests {
         #expect(validated.executablePath == "/tmp/my cli/codex")
     }
 
+    /// 自定义模型配置影响对应参数，不放宽原有执行权限。
     @Test
     func testCustomModelAndEffortReachCLIArgumentsWithoutChangingPermissions() {
         let directory = URL(fileURLWithPath: "/tmp/mixing")
@@ -581,6 +631,7 @@ struct MixingTests {
         }
     }
 
+    /// 全局设置变更不会重标已生成配方的模型来源。
     @Test
     func testGeneratedPaletteKeepsModelSnapshotWhenGlobalSettingsChange() throws {
         var configuration = AIConfiguration()
@@ -597,6 +648,7 @@ struct MixingTests {
         }
     }
 
+    /// 保存结果只追加到请求原项目，不覆盖已有颜色或当前另一个项目。
     @Test
     func testSavingPaletteAppendsOnlyToItsOriginalProject() throws {
         let first = ListItem(text: "第一个项目", colors: [ColorInfo(red: 10, green: 20, blue: 30)])
@@ -618,6 +670,7 @@ struct MixingTests {
         #expect(Set(project.colors.map(\.id)).count == 7)
     }
 
+    /// 原项目已删除时，迟到的结果不得重新创建该项目。
     @Test
     func testDeletedProjectCannotBeRecreatedBySavingAPalette() throws {
         let deleted = ListItem(text: "被删除的项目")
@@ -631,6 +684,7 @@ struct MixingTests {
         #expect(library.items == [kept])
     }
 
+    /// 独立删除阴影后，本色和高光配方仍完整存在。
     @Test
     func testDeletingAIShadowKeepsBaseAndHighlightRecipes() throws {
         let palette = try MixingPalette(target: .initial, response: paletteResponse())
@@ -644,6 +698,8 @@ struct MixingTests {
         #expect(library.item(id: project.id)?.colors.compactMap(\.mixingRecipe) == [palette.base, palette.highlight])
     }
 
+    // MARK: - 比例合色与来源保留
+    /// 所有输入均被保留，未满 100 的占比按相对关系归一化。
     @Test
     func testBlendKeepsEverySourceAndNormalizesRelativePercentages() throws {
         let request = try sampleBlendRequest()
@@ -659,6 +715,7 @@ struct MixingTests {
         #expect(request.prompt().contains("不得将不足 100% 的部分补成"))
     }
 
+    /// 非有限、非正或越界占比，以及无效 RGB，都应在请求构造时被拒绝。
     @Test
     func testBlendRejectsInvalidPercentagesAndSourceRGB() throws {
         let valid = ColorBlendSource(target: .initial, percentage: 40)
@@ -678,6 +735,7 @@ struct MixingTests {
         }
     }
 
+    /// 一行草稿无效会阻止整个请求，不能静默忽略该行。
     @Test
     func testBlendInputDraftDoesNotSilentlyDropAnInvalidRow() throws {
         let valid = ColorBlendEntry(target: .initial, percentage: 33.5)
@@ -695,6 +753,7 @@ struct MixingTests {
         #expect(request.totalPercentage == 50)
     }
 
+    /// 使用 AI 估算的合成目标，同时保留本地原始输入作为来源。
     @Test
     func testBlendUsesAIChosenRGBAndPreservesOriginalInputs() throws {
         let request = try sampleBlendRequest()
@@ -708,12 +767,13 @@ struct MixingTests {
             #expect(recipe.synthesis?.target == .initial)
             #expect(recipe.synthesis?.explanation == "AI 合成说明测试")
             #expect(recipe.model == model)
-            #expect(recipe.response.ingredients.reduce(0) { $0 + $1.drops } == 200)
+            #expect(recipe.ingredientDrops == (recipe.role == .base ? 200 : (recipe.role == .shadow ? 2 : 6)))
             #expect(recipe.formattedText.contains("RGB 255, 0, 0 · 40%"))
         }
         #expect(palette.formattedText.contains("AI 合成本色"))
     }
 
+    /// 缺少目标、非法内容或超限响应不能成为合色结果。
     @Test
     func testBlendRejectsMissingInvalidOrOversizedAIResults() throws {
         let request = try sampleBlendRequest()
@@ -749,6 +809,7 @@ struct MixingTests {
         #expect(throws: MixingError.self) { try request.decodePalette(invalidPalette) }
     }
 
+    /// 合色来源在保存、重载及删除其他色阶后仍保持完整。
     @Test
     func testBlendProvenanceSurvivesSavingReloadingAndIndependentDeletion() throws {
         try withDefaults { defaults in
@@ -771,6 +832,7 @@ struct MixingTests {
         }
     }
 
+    /// 假 CLI 检查全部输入、合成结构和三色约束被实际传入请求。
     @Test
     func testBlendServiceSendsAllInputsAndSchemaToCLI() async throws {
         let files = FileManager.default
@@ -805,7 +867,7 @@ struct MixingTests {
         let cases: [(ColorBlendRequest, MixingPaintSet)] = [
             (try sampleBlendRequest(), .soFlat12),
             (try brandBlendRequest(), .soFlat12),
-            (try brandBlendRequest(), .fluid13)
+            (try brandBlendRequest(), .fluid15)
         ]
         for (request, paintSet) in cases {
             try blendFixture(paintSet: paintSet).write(to: directory.appendingPathComponent("fixture.json"))
@@ -829,6 +891,7 @@ struct MixingTests {
         }
     }
 
+    /// 商品合色的系列色号及相对占比可传递到任一当前 GOLDEN 套装。
     @Test
     func testBrandBlendCarriesColorCodesAndRelativeWeightsToBothPaintSets() throws {
         let request = try brandBlendRequest()
@@ -851,6 +914,7 @@ struct MixingTests {
         }
     }
 
+    /// 商品输入必须明确选择，切换共享色号的系列后应清空旧选择。
     @Test
     func testMixedBlendDraftRequiresExplicitReferenceAndClearsSharedCodesAcrossSeries() throws {
         let rgb = ColorBlendEntry(target: .initial, percentage: 70)
@@ -888,6 +952,7 @@ struct MixingTests {
         #expect(ColorBlendEntry.request(from: [reference, rgb]) == nil)
     }
 
+    /// 未知商品与不匹配的参考 RGB 在新请求及历史来源解码中都应被拒绝。
     @Test
     func testBrandBlendRejectsUnknownCodesAndMismatchedRGBIncludingSavedSources() throws {
         let valid = ColorBlendSource(target: .initial, percentage: 70)
@@ -912,6 +977,7 @@ struct MixingTests {
         }
     }
 
+    /// 兼容早期纯 RGB 合色来源，并保留后来商品引用的预览快照。
     @Test
     func testSavedBlendsReadLegacyRGBSourcesAndPreserveReferenceRGBSnapshots() throws {
         let request = try sampleBlendRequest()
@@ -941,6 +1007,7 @@ struct MixingTests {
         #expect(restored.formattedText.contains("RGB 230, 231, 232"))
     }
 
+    /// 任一当前套装保存三种色阶后，商品合色来源均可恢复。
     @Test
     func testBrandBlendProvenanceSurvivesSavingAllTonesInEitherGoldenPaintSet() throws {
         for paintSet in MixingPaintSet.selectable {
@@ -959,7 +1026,7 @@ struct MixingTests {
                     #expect(recipe.synthesis?.sources == request.sources)
                     #expect(recipe.referencePaint == nil)
                     #expect(recipe.paintSet == paintSet)
-                    #expect(recipe.response.ingredients.reduce(0) { $0 + $1.drops } == 200)
+                    #expect(recipe.ingredientDrops == (recipe.role == .base ? 200 : (recipe.role == .shadow ? 2 : 6)))
                     #expect(Set(recipe.response.ingredients.map(\.paintCode)).isSubset(of: Set(paintSet.paints.map(\.code))))
                     for source in request.sources {
                         let reference = try #require(source.referencePaint)
@@ -977,6 +1044,8 @@ struct MixingTests {
         }
     }
 
+    // MARK: - 固定样本与隔离环境
+    /// 构造 H1/H2 的商品参考合色输入，覆盖品牌身份与相对用量。
     private func brandBlendRequest() throws -> ColorBlendRequest {
         try ColorBlendRequest(sources: try [("H1", 30.0), ("H2", 70.0)].map { code, percentage in
             let reference = PaintReference(series: .aqueous, paintCode: code)
@@ -986,6 +1055,7 @@ struct MixingTests {
         })
     }
 
+    /// 构造四组总占比为 90 的纯 RGB 输入，验证相对比例而非补足额外颜色。
     private func sampleBlendRequest() throws -> ColorBlendRequest {
         try ColorBlendRequest(sources: [
             ColorBlendSource(target: MixingTarget(red: 255, green: 0, blue: 0), percentage: 40),
@@ -995,6 +1065,7 @@ struct MixingTests {
         ])
     }
 
+    /// 生成包含合成目标、解释和三色方案的固定 JSON 响应。
     private func blendFixture(
         explanation: String = "AI 合成说明测试", paintSet: MixingPaintSet = .soFlat12
     ) throws -> Data {
@@ -1008,6 +1079,7 @@ struct MixingTests {
         ])
     }
 
+    /// 生成可替换阴影、高光目标的三色响应，供明度边界测试复用。
     private func paletteResponse(
         shadow: MixingTarget = MixingTarget(red: 64, green: 80, blue: 64),
         highlight: MixingTarget = MixingTarget(red: 220, green: 235, blue: 220),
@@ -1015,27 +1087,39 @@ struct MixingTests {
     ) -> MixingPaletteResponse {
         MixingPaletteResponse(
             base: response(ingredients: doses(paintSet: paintSet)),
-            shadow: MixingToneResponse(target: shadow, recipe: toneRecipe(white: 100, paintSet: paintSet)),
-            highlight: MixingToneResponse(target: highlight, recipe: toneRecipe(white: 200, paintSet: paintSet))
+            shadow: MixingToneResponse(target: shadow, recipe: additionRecipe(white: 0, black: 2, paintSet: paintSet)),
+            highlight: MixingToneResponse(target: highlight, recipe: additionRecipe(white: 6, black: 0, paintSet: paintSet))
         )
     }
 
+    /// 只记录追加原料，20 滴本色由组合模型保存，不伪装成 paintCode。
+    private func additionRecipe(white: Int, black: Int, paintSet: MixingPaintSet = .soFlat12) -> MixingResponse {
+        let whiteCode = paintSet == .fluid15 ? "2380" : "6755"
+        let blackCode = paintSet == .fluid15 ? "2040" : "6745"
+        return response(ingredients: paintSet.paints.map {
+            PaintDose(paintCode: $0.code, drops: $0.code == whiteCode ? white : ($0.code == blackCode ? black : 0))
+        })
+    }
+
+    /// 用白色和黑色构造总量 200 滴的本色或历史独立配方。
     private func toneRecipe(white: Int, paintSet: MixingPaintSet = .soFlat12) -> MixingResponse {
-        let whiteCode = paintSet == .fluid13 ? "2380" : "6755"
-        let blackCode = paintSet == .fluid13 ? "2040" : "6745"
+        let whiteCode = paintSet == .fluid15 ? "2380" : "6755"
+        let blackCode = paintSet == .fluid15 ? "2040" : "6745"
         return response(ingredients: paintSet.paints.map {
             PaintDose(paintCode: $0.code, drops: $0.code == whiteCode ? white : ($0.code == blackCode ? 200 - white : 0))
         })
     }
 
+    /// 生成列全套装的用量表；白色可调整，黑色固定 1 滴以构造总量反例。
     private func doses(white: Int = 199, paintSet: MixingPaintSet = .soFlat12) -> [PaintDose] {
-        let whiteCode = paintSet == .fluid13 ? "2380" : "6755"
-        let blackCode = paintSet == .fluid13 ? "2040" : "6745"
+        let whiteCode = paintSet == .fluid15 ? "2380" : "6755"
+        let blackCode = paintSet == .fluid15 ? "2040" : "6745"
         return paintSet.paints.map {
             PaintDose(paintCode: $0.code, drops: $0.code == whiteCode ? white : ($0.code == blackCode ? 1 : 0))
         }
     }
 
+    /// 组装单份响应，默认按非零原料生成一致的操作步骤。
     private func response(ingredients: [PaintDose]? = nil, steps: [MixingStep]? = nil) -> MixingResponse {
         let ingredients = ingredients ?? doses()
         return MixingResponse(
@@ -1048,6 +1132,7 @@ struct MixingTests {
         )
     }
 
+    /// 为每次测试建立独立 UserDefaults 域，结束后清理。
     private func withDefaults(_ body: (UserDefaults) throws -> Void) throws {
         let name = "GoldenMixingTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: name))
@@ -1055,6 +1140,7 @@ struct MixingTests {
         try body(defaults)
     }
 
+    /// 写入临时旧格式偏好文件，供迁移与损坏数据保护测试使用。
     private func withLegacyPreferences(value: Any, body: (URL) throws -> Void) throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).plist")
         let data = try PropertyListSerialization.data(
@@ -1065,6 +1151,7 @@ struct MixingTests {
         try body(url)
     }
 
+    /// 为子进程测试准备独立工作目录、标准输入和日志文件，并统一回收。
     private func withProcessFiles(
         _ body: (URL, FileHandle, FileHandle, URL) async throws -> Void
     ) async throws {
@@ -1079,6 +1166,7 @@ struct MixingTests {
         try await body(directory, input, log, logURL)
     }
 
+    /// 从进程日志读取 PID，确认系统已找不到该子进程。
     private func expectProcessExited(logURL: URL) throws {
         let output = try String(contentsOf: logURL, encoding: .utf8)
         let pid = try #require(Int32(output.trimmingCharacters(in: .whitespacesAndNewlines)))

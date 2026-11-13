@@ -1,9 +1,12 @@
+// macOS AI 设置界面，以及兼容不同系统版本的设置入口。
 import SwiftUI
 import AppKit
 
+/// 通过绑定修改应用级配置，持久化由应用根节点处理。
 struct AISettingsView: View {
     @Binding var configuration: AIConfiguration
 
+    /// 编辑模型、推理强度和 CLI 路径，并即时展示本地配置校验结果。
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 6) {
@@ -68,6 +71,7 @@ struct AISettingsView: View {
         .navigationTitle("系统设置")
     }
 
+    /// 选择单个 CLI 可执行文件，只保存路径，不在设置界面启动进程。
     private func chooseExecutable() {
         let panel = NSOpenPanel()
         panel.title = "选择 Codex CLI 可执行文件"
@@ -81,7 +85,9 @@ struct AISettingsView: View {
     }
 }
 
+/// 为主界面提供统一的系统设置按钮。
 struct AISettingsLink: View {
+    /// 新系统使用原生 SettingsLink，旧系统按版本发送对应设置窗口动作。
     var body: some View {
         Group {
             if #available(macOS 14.0, *) {

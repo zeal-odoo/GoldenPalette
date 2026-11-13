@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9F1A70E730A62F82002C21C9 /* TamiyaPaintAdditions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A70E630A62F82002C21C9 /* TamiyaPaintAdditions.swift */; };
+		9F1A70E930A729CD002C21C9 /* ToneAdditionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A70E830A729CD002C21C9 /* ToneAdditionTests.swift */; };
 		9F3B8E0E3078BDF7001FD75B /* PaintSwatchData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */; };
 		9F44FA333072702F0029812C /* RecipeLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA323072702F0029812C /* RecipeLibrary.swift */; };
 		9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F44FA34307280A70029812C /* MixingRecipe.swift */; };
@@ -30,6 +32,17 @@
 		9F8F7CEE3077D371000C73AF /* PaintCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8F7CED3077D371000C73AF /* PaintCatalog.swift */; };
 		9F8F7CF03077D4E5000C73AF /* PaintCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8F7CEF3077D4E5000C73AF /* PaintCatalogTests.swift */; };
 		9F8F7CF23077E3D1000C73AF /* PaintReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8F7CF13077E3D1000C73AF /* PaintReference.swift */; };
+		9FB124BB30A4094900E59757 /* ManualStudy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124BA30A4094900E59757 /* ManualStudy.swift */; };
+		9FB124BD30A4094D00E59757 /* ManualStudyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124BC30A4094D00E59757 /* ManualStudyView.swift */; };
+		9FB124BF30A409F800E59757 /* ManualResearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124BE30A409F800E59757 /* ManualResearchService.swift */; };
+		9FB124C130A40A3B00E59757 /* ManualStudyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124C030A40A3B00E59757 /* ManualStudyStore.swift */; };
+		9FB124C330A40AFB00E59757 /* ManualPDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124C230A40AFB00E59757 /* ManualPDF.swift */; };
+		9FB124C530A40F5100E59757 /* ManualStudyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124C430A40F5100E59757 /* ManualStudyTests.swift */; };
+		9FB124C730A571B700E59757 /* CodexHealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124C630A571B700E59757 /* CodexHealthCheck.swift */; };
+		9FB124C930A571B900E59757 /* CodexStartupState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124C830A571B900E59757 /* CodexStartupState.swift */; };
+		9FB124CB30A571BB00E59757 /* CodexStartupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124CA30A571BB00E59757 /* CodexStartupView.swift */; };
+		9FB124CD30A5746F00E59757 /* CodexHealthCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124CC30A5746F00E59757 /* CodexHealthCheckTests.swift */; };
+		9FB124CF30A578CE00E59757 /* CodexStartupUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FB124CE30A578CE00E59757 /* CodexStartupUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +63,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9F1A70E630A62F82002C21C9 /* TamiyaPaintAdditions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TamiyaPaintAdditions.swift; sourceTree = "<group>"; };
+		9F1A70E830A729CD002C21C9 /* ToneAdditionTests.swift */ = {isa = PBXFileReference; path = ToneAdditionTests.swift; sourceTree = "<group>"; };
 		9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintSwatchData.swift; sourceTree = "<group>"; };
 		9F44FA323072702F0029812C /* RecipeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeLibrary.swift; sourceTree = "<group>"; };
 		9F44FA34307280A70029812C /* MixingRecipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingRecipe.swift; sourceTree = "<group>"; };
@@ -77,6 +92,17 @@
 		9F8F7CED3077D371000C73AF /* PaintCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintCatalog.swift; sourceTree = "<group>"; };
 		9F8F7CEF3077D4E5000C73AF /* PaintCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintCatalogTests.swift; sourceTree = "<group>"; };
 		9F8F7CF13077E3D1000C73AF /* PaintReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintReference.swift; sourceTree = "<group>"; };
+		9FB124BA30A4094900E59757 /* ManualStudy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualStudy.swift; sourceTree = "<group>"; };
+		9FB124BC30A4094D00E59757 /* ManualStudyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualStudyView.swift; sourceTree = "<group>"; };
+		9FB124BE30A409F800E59757 /* ManualResearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualResearchService.swift; sourceTree = "<group>"; };
+		9FB124C030A40A3B00E59757 /* ManualStudyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualStudyStore.swift; sourceTree = "<group>"; };
+		9FB124C230A40AFB00E59757 /* ManualPDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualPDF.swift; sourceTree = "<group>"; };
+		9FB124C430A40F5100E59757 /* ManualStudyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualStudyTests.swift; sourceTree = "<group>"; };
+		9FB124C630A571B700E59757 /* CodexHealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexHealthCheck.swift; sourceTree = "<group>"; };
+		9FB124C830A571B900E59757 /* CodexStartupState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexStartupState.swift; sourceTree = "<group>"; };
+		9FB124CA30A571BB00E59757 /* CodexStartupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexStartupView.swift; sourceTree = "<group>"; };
+		9FB124CC30A5746F00E59757 /* CodexHealthCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexHealthCheckTests.swift; sourceTree = "<group>"; };
+		9FB124CE30A578CE00E59757 /* CodexStartupUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexStartupUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +172,15 @@
 				9F8F7CED3077D371000C73AF /* PaintCatalog.swift */,
 				9F8F7CF13077E3D1000C73AF /* PaintReference.swift */,
 				9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */,
+				9FB124BA30A4094900E59757 /* ManualStudy.swift */,
+				9FB124BC30A4094D00E59757 /* ManualStudyView.swift */,
+				9FB124BE30A409F800E59757 /* ManualResearchService.swift */,
+				9FB124C030A40A3B00E59757 /* ManualStudyStore.swift */,
+				9FB124C230A40AFB00E59757 /* ManualPDF.swift */,
+				9FB124C630A571B700E59757 /* CodexHealthCheck.swift */,
+				9FB124C830A571B900E59757 /* CodexStartupState.swift */,
+				9FB124CA30A571BB00E59757 /* CodexStartupView.swift */,
+				9F1A70E630A62F82002C21C9 /* TamiyaPaintAdditions.swift */,
 			);
 			path = "Golden调色";
 			sourceTree = "<group>";
@@ -164,6 +199,9 @@
 				9F76CAE52D54A62E00DD29D9 /* Golden__Tests.swift */,
 				9F44FA3A307282610029812C /* MixingTests.swift */,
 				9F8F7CEF3077D4E5000C73AF /* PaintCatalogTests.swift */,
+				9FB124C430A40F5100E59757 /* ManualStudyTests.swift */,
+				9FB124CC30A5746F00E59757 /* CodexHealthCheckTests.swift */,
+				9F1A70E830A729CD002C21C9 /* ToneAdditionTests.swift */,
 			);
 			path = "Golden调色Tests";
 			sourceTree = "<group>";
@@ -173,6 +211,7 @@
 			children = (
 				9F76CAEF2D54A62E00DD29D9 /* Golden__UITests.swift */,
 				9F76CAF12D54A62E00DD29D9 /* Golden__UITestsLaunchTests.swift */,
+				9FB124CE30A578CE00E59757 /* CodexStartupUITests.swift */,
 			);
 			path = "Golden调色UITests";
 			sourceTree = "<group>";
@@ -307,10 +346,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F1A70E730A62F82002C21C9 /* TamiyaPaintAdditions.swift in Sources */,
+				9FB124BB30A4094900E59757 /* ManualStudy.swift in Sources */,
 				9F3B8E0E3078BDF7001FD75B /* PaintSwatchData.swift in Sources */,
+				9FB124CB30A571BB00E59757 /* CodexStartupView.swift in Sources */,
 				9F76CAD62D54A62C00DD29D9 /* ContentView.swift in Sources */,
 				9F44FA35307280A70029812C /* MixingRecipe.swift in Sources */,
 				9F8F7CEE3077D371000C73AF /* PaintCatalog.swift in Sources */,
+				9FB124BF30A409F800E59757 /* ManualResearchService.swift in Sources */,
 				9F44FA3F30728EA80029812C /* AIConfiguration.swift in Sources */,
 				9F44FA473072D5D50029812C /* SavedMixingRecipeWindow.swift in Sources */,
 				9F44FA39307281960029812C /* AIMixingView.swift in Sources */,
@@ -319,8 +362,13 @@
 				9F8F7CF23077E3D1000C73AF /* PaintReference.swift in Sources */,
 				9F44FA4130728ED20029812C /* AISettingsView.swift in Sources */,
 				9F44FA3D307289D80029812C /* MixingPalette.swift in Sources */,
+				9FB124C730A571B700E59757 /* CodexHealthCheck.swift in Sources */,
+				9FB124C930A571B900E59757 /* CodexStartupState.swift in Sources */,
 				9F44FA333072702F0029812C /* RecipeLibrary.swift in Sources */,
+				9FB124BD30A4094D00E59757 /* ManualStudyView.swift in Sources */,
 				9F44FA37307280EF0029812C /* CodexMixingService.swift in Sources */,
+				9FB124C330A40AFB00E59757 /* ManualPDF.swift in Sources */,
+				9FB124C130A40A3B00E59757 /* ManualStudyStore.swift in Sources */,
 				9F76CAD42D54A62C00DD29D9 /* Golden__App.swift in Sources */,
 				9F44FA433072C2080029812C /* ColorBlend.swift in Sources */,
 			);
@@ -333,6 +381,9 @@
 				9F76CAE62D54A62E00DD29D9 /* Golden__Tests.swift in Sources */,
 				9F44FA3B307282610029812C /* MixingTests.swift in Sources */,
 				9F8F7CF03077D4E5000C73AF /* PaintCatalogTests.swift in Sources */,
+				9F1A70E930A729CD002C21C9 /* ToneAdditionTests.swift in Sources */,
+				9FB124CD30A5746F00E59757 /* CodexHealthCheckTests.swift in Sources */,
+				9FB124C530A40F5100E59757 /* ManualStudyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,6 +393,7 @@
 			files = (
 				9F76CAF22D54A62E00DD29D9 /* Golden__UITestsLaunchTests.swift in Sources */,
 				9F76CAF02D54A62E00DD29D9 /* Golden__UITests.swift in Sources */,
+				9FB124CF30A578CE00E59757 /* CodexStartupUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -490,7 +542,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -503,7 +555,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.13;
+				MARKETING_VERSION = 1.0.19;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -519,7 +571,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 20;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -532,7 +584,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.13;
+				MARKETING_VERSION = 1.0.19;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

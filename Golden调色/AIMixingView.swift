@@ -1,31 +1,42 @@
+// AI 调色工作界面：支持 RGB、商品标准色及比例合色三种输入，统一生成和保存三色方案。
+// 生成器从外部注入；本视图管理输入草稿、请求身份、取消及结果展示。
 import SwiftUI
 import AppKit
 
+/// 主线程协调输入与异步结果，避免已取消或已过期请求写回当前界面。
 @MainActor
 struct AIMixingView: View {
     @Environment(\.dismiss) private var dismiss
+    // MARK: - 输入草稿与生成状态
     @State private var redText: String
     @State private var greenText: String
     @State private var blueText: String
     @State private var inputMode: MixingInputMode
+    /// 用户实际拥有的调色原料套装，与商品目标参考系列分别保存。
     @State private var paintSet: MixingPaintSet
     @State private var blendEntries: [ColorBlendEntry]
     @State private var result: MixingPalette?
     @State private var errorMessage: String?
+    /// 当前请求身份；取消或输入变化后旧请求不得继续提交结果。
     @State private var requestID: UUID?
     @State private var generationTask: Task<Void, Never>?
+    /// 请求开始时的模型快照，用于等待提示及生成来源展示。
     @State private var activeModel: AIModelSelection?
+    // 参考系列和色号仅描述要复现的目标，不改变实际调色原料。
     @State private var referenceSeries: PaintSeries
     @State private var selectedPaintCode: String?
     @State private var paintSearchText = ""
 
+    // MARK: - 项目上下文与注入能力
     let projectName: String
     let configuration: AIConfiguration
     let canSave: Bool
     let generateRecipe: MixingGenerator
     let generateBlend: BlendMixingGenerator
+    /// 将完整三色交给原项目保存；只有保存成功才关闭窗口。
     let onSave: (MixingPalette) -> Bool
 
+    /// 根据初始参考色选择输入模式，并建立独立的 RGB 与比例合色草稿。
     init(
         projectName: String,
         initialTarget: MixingTarget = .initial,
@@ -58,25 +69,32 @@ struct AIMixingView: View {
         self.onSave = onSave
     }
 
+    /// 从当前参考系列和色号构造商品引用。
     private var selectedReference: PaintReference? {
         guard let selectedPaintCode else { return nil }
         return PaintReference(series: referenceSeries, paintCode: selectedPaintCode)
     }
 
+    /// 只有标准色模式才向服务传入商品引用，避免残留选择影响其他输入模式。
     private var activeReference: PaintReference? {
         inputMode == .reference ? selectedReference : nil
     }
 
+    /// 标准色使用目录预览，RGB 模式严格解析文本；合色模式另走 blendRequest。
     private var target: MixingTarget? {
         if inputMode == .reference { return selectedReference?.previewTarget }
         return MixingTarget(redText: redText, greenText: greenText, blueText: blueText)
     }
 
+    /// 请求身份存在即表示正在生成，不依赖任务句柄是否仍被持有。
     private var isGenerating: Bool { requestID != nil }
 
+    /// 将所有合色输入一起校验，任何一行无效时都不能生成。
     private var blendRequest: ColorBlendRequest? { ColorBlendEntry.request(from: blendEntries) }
+    /// 按当前输入模式检查对应数据是否可提交。
     private var hasValidInput: Bool { inputMode == .blend ? blendRequest != nil : target != nil }
 
+    /// 系统取色器与文本通道双向同步，先转换到 sRGB 再保存为整数输入。
     private var selectedColor: Binding<Color> {
         Binding(
             get: { target?.color ?? .gray },
@@ -94,6 +112,7 @@ struct AIMixingView: View {
         )
     }
 
+    /// 固定头部、错误区和保存区，中间输入与结果各自滚动。
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -102,7 +121,7 @@ struct AIMixingView: View {
                         .font(.title2.weight(.semibold))
                         .lineLimit(1)
                         .accessibilityIdentifier("mixingProjectTitle")
-                    Text("调色用漆：\(paintSet.title) · \(paintSet.paints.count) 色 · 三份各 200 滴")
+                    Text("调色用漆：\(paintSet.title) · \(paintSet.paints.count) 色 · 阴影/高光各用 20 滴本色追加")
                         .accessibilityIdentifier("mixingPaintSummary")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -160,7 +179,7 @@ struct AIMixingView: View {
                             .padding(.vertical, 40)
                         } else {
                             Text("调色原料 · GOLDEN \(paintSet.paints.count) 色").font(.headline)
-                            Text("AI 会生成本色、阴影色和高光色三份配方，逐色列出用量，每份各 200 滴。")
+                            Text("先调本色 200 滴，再各取 20 滴调阴影和高光。AI 会列出需追加的颜色和滴数，保持自然色相并拉开明暗。")
                                 .foregroundStyle(.secondary)
                             Text("AI 只使用当前选择的这一套原料。品牌标准色用于确定目标，不会作为调色原料。")
                                 .font(.caption)
@@ -224,6 +243,7 @@ struct AIMixingView: View {
         }
         .frame(width: 900, height: 680)
         .background(AppPalette.canvas)
+        // 任一输入或套装变更都使旧配方失效；处理系统取色器仍可能异步返回的修改。
         .onChange(of: redText) { _ in clearResult() }
         .onChange(of: greenText) { _ in clearResult() }
         .onChange(of: blueText) { _ in clearResult() }
@@ -239,6 +259,8 @@ struct AIMixingView: View {
         .onDisappear(perform: cancelGeneration)
     }
 
+    // MARK: - 输入与操作区域
+    /// 先选实际原料套装，再按模式展示目标输入和生成控制。
     private var inputPanel: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
@@ -280,6 +302,7 @@ struct AIMixingView: View {
         }
     }
 
+    /// 搜索商品参考色并展示其来源与近似限制，不将品牌参考漆加入原料。
     private var referenceColorInput: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("选择要用所选原料复现的标准色。")
@@ -348,6 +371,7 @@ struct AIMixingView: View {
         }
     }
 
+    /// 编辑单个 sRGB 目标，颜色预览与有效性提示实时同步。
     private var singleColorInput: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("本色（输入颜色）").font(.headline)
@@ -379,10 +403,11 @@ struct AIMixingView: View {
         }
     }
 
+    /// 展示当前生成来源和等待信息，按输入、配置和项目可写状态控制生成按钮。
     private var generationControls: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("每色 200 滴 · 三色共 600 滴").font(.headline)
+                Text("本色 200 滴 · 阴影/高光各取 20 滴追加").font(.headline)
                 Text((result?.base.model ?? (isGenerating ? activeModel : nil) ?? configuration.model).summary)
                     .accessibilityIdentifier("mixingModelSummary")
                     .font(.caption.monospaced())
@@ -416,6 +441,7 @@ struct AIMixingView: View {
         }
     }
 
+    /// 为 RGB 通道提供统一文本输入和可访问标识，解析由 MixingTarget 负责。
     private func channelField(_ label: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(.caption.weight(.medium))
@@ -426,6 +452,8 @@ struct AIMixingView: View {
         }
     }
 
+    // MARK: - 生成生命周期
+    /// 输入变更时清空旧结果及错误，并取消仍运行的请求。
     private func clearResult() {
         result = nil
         activeModel = nil
@@ -434,6 +462,7 @@ struct AIMixingView: View {
         if isGenerating { cancelGeneration() }
     }
 
+    /// 对输入、套装和配置取快照，再调用相应生成器并验证返回来源一致。
     private func generate() {
         guard hasValidInput, !isGenerating, configuration.isValid, canSave else { return }
         let submittedTarget = target
@@ -444,6 +473,7 @@ struct AIMixingView: View {
         errorMessage = nil
         let id = UUID()
         requestID = id
+        // 运行中的请求保持启动时的配置，设置窗口后续改动仅影响下一次生成。
         // A running request retains the settings that were selected when it started.
         let requestConfiguration = configuration
         activeModel = configuration.model
@@ -459,6 +489,7 @@ struct AIMixingView: View {
                     throw MixingError.invalidRecipe("请输入有效颜色。")
                 }
                 try Task.checkCancellation()
+                // 身份和套装都要匹配，防止较晚到达的旧响应覆盖新任务。
                 guard requestID == id, paintSet == submittedPaintSet else { return }
                 guard recipe.recipes.allSatisfy({
                     $0.paintSet == submittedPaintSet && $0.referencePaint == submittedReference
@@ -480,6 +511,7 @@ struct AIMixingView: View {
         }
     }
 
+    /// 取消任务并立即撤销请求身份，后续结果即使到达也不能被采用。
     private func cancelGeneration() {
         generationTask?.cancel()
         generationTask = nil
@@ -487,15 +519,18 @@ struct AIMixingView: View {
     }
 }
 
+// MARK: - 可复用的配方展示
+/// 三色选择器及所选角色的配方详情。
 struct MixingPaletteDetails: View {
     let palette: MixingPalette
     @State private var selectedRole: MixingRole = .base
 
+    /// 并列展示三种目标色，选中角色后切换该份用量和步骤。
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("三色配方 · 每色 200 滴")
+            Text("三色配方 · 从本色追加调制")
                 .font(.headline)
-            Text("三份分别调制，共 600 滴。点击色块查看该色的用量与步骤。")
+            Text(palette.preparationSummary + "点击色块查看用量与步骤。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -526,7 +561,7 @@ struct MixingPaletteDetails: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("查看\(role.title)配方")
-                    .accessibilityValue("\(recipe.target.description)，200 滴")
+                    .accessibilityValue("\(recipe.target.description)，\(recipe.quantitySummary)")
                     .accessibilityAddTraits(selectedRole == role ? .isSelected : [])
                     .accessibilityIdentifier("mixingRole-\(role.rawValue)")
                 }
@@ -539,9 +574,11 @@ struct MixingPaletteDetails: View {
     }
 }
 
+/// 单份配方详情，生成结果页与已保存配方窗口共用。
 struct MixingRecipeDetails: View {
     let recipe: MixingRecipe
 
+    /// 依次显示目标、原料、参考来源、用量、步骤和试调说明。
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
@@ -580,11 +617,22 @@ struct MixingRecipeDetails: View {
                 Divider()
             }
 
-            HStack {
-                Text("各色用量").font(.headline)
-                Spacer()
-                Text("合计 200 滴").font(.headline.monospacedDigit())
+            if let portion = recipe.basePortion {
+                Text("本色底料：\(portion.response.name) · \(portion.drops) 滴 · \(portion.target.hex)")
+                    .font(.subheadline.weight(.medium))
+                    .accessibilityIdentifier("mixingBasePortion")
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(recipe.basePortion == nil ? "各色用量" : "需要追加的颜色")
+                    .font(.headline)
+                Text(recipe.quantitySummary).font(.subheadline.monospacedDigit())
                     .accessibilityIdentifier("mixingTotal")
+            }
+
+            if recipe.basePortion != nil && recipe.ingredientDrops == 0 {
+                Text("无需追加，已到达此方向的黑/白边界。")
+                    .foregroundStyle(.secondary)
             }
 
             VStack(spacing: 10) {
@@ -596,10 +644,15 @@ struct MixingRecipeDetails: View {
 
             Divider()
             Text("具体怎么调").font(.headline)
+            if let instruction = recipe.basePortionInstruction {
+                Text("1. " + instruction)
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier("mixingBaseStep")
+            }
             ForEach(Array(recipe.response.steps.enumerated()), id: \.offset) { index, step in
                 let paint = recipe.paints.first { $0.code == step.paintCode }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("\(index + 1). 加入 \(paint?.series.title ?? "") · \(paint?.chineseName ?? step.paintCode) #\(step.paintCode) · \(step.drops) 滴")
+                    Text("\(index + (recipe.basePortion == nil ? 1 : 2)). 加入 \(paint?.series.title ?? "") · \(paint?.chineseName ?? step.paintCode) #\(step.paintCode) · \(step.drops) 滴")
                         .font(.subheadline.weight(.semibold))
                     Text(step.instruction)
                         .foregroundStyle(.secondary)
@@ -609,6 +662,16 @@ struct MixingRecipeDetails: View {
             Divider()
             Text("试调说明").font(.headline)
             Text(recipe.response.notes)
+            if let base = recipe.basePreparation {
+                // 随伴随色保存完整本色快照，独立查看时仍能找回配制依据。
+                DisclosureGroup("查看本色原配方（先调 200 滴，再取 20 滴）") {
+                    Text(base.formattedText)
+                        .font(.caption)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 8)
+                        .accessibilityIdentifier("mixingBasePreparation")
+                }
+            }
             Text(MixingRecipe.accuracyNote)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -621,10 +684,13 @@ struct MixingRecipeDetails: View {
     }
 }
 
+/// 商品色样与可选滴数行，兼用于可用原料目录和配方用量表。
 private struct PaintDoseRow: View {
     let paint: CatalogPaint
+    /// nil 表示仅展示可用原料；0 表示本份配方明确未使用该颜料。
     let drops: Int?
 
+    /// 色块保留来源提示，并让辅助功能将名称、系列和滴数作为一项朗读。
     var body: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 5)
@@ -651,13 +717,15 @@ private struct PaintDoseRow: View {
     }
 }
 
+/// 在项目颜色卡片中打开相应角色的已保存配方。
 struct SavedMixingRecipeButton: View {
     let recipe: MixingRecipe
     let onOpen: () -> Void
 
+    /// 用角色名称和统一计量标识呈现查看入口。
     var body: some View {
         Button(action: onOpen) {
-            Label("查看\(recipe.role.title) · 200 滴", systemImage: "drop")
+            Label("查看\(recipe.role.title) · \(recipe.preparedTotalDrops) 滴", systemImage: "drop")
         }
         .buttonStyle(.bordered)
         .accessibilityIdentifier("viewMixingRecipeButton")
@@ -665,7 +733,9 @@ struct SavedMixingRecipeButton: View {
     }
 }
 
+/// 将领域层的整数目标色适配为 SwiftUI 预览，不在数据模型中引入界面依赖。
 extension MixingTarget {
+    /// 显式采用 sRGB 色彩空间，通道由 0...255 换算为 0...1。
     var color: Color {
         Color(.sRGB, red: Double(red) / 255, green: Double(green) / 255, blue: Double(blue) / 255)
     }

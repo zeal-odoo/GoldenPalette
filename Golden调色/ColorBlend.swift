@@ -1,28 +1,38 @@
+// 按比例合色的输入与结果模型。
+// 输入百分比表示参考色的相对关系，最终 GOLDEN 配方滴数由 AI 独立推断。
 import Foundation
 
+/// 向界面注入比例合色服务，返回可直接展示和保存的三色配方。
 typealias BlendMixingGenerator = @Sendable (ColorBlendRequest, MixingPaintSet, AIConfiguration) async throws -> MixingPalette
 
+/// 一组参考颜色及其相对占比，可附带商品标准色身份。
 struct ColorBlendSource: Codable, Equatable, Sendable {
     let target: MixingTarget
+    /// 单项输入百分比；所有项总和可不等于 100，提示词会说明按比例归一化。
     let percentage: Double
     // Optional for compatibility with saved RGB-only blends.
     let referencePaint: PaintReference?
 
+    /// 保留用户原始输入，不提前对 RGB 做算术混合。
     init(target: MixingTarget, percentage: Double, referencePaint: PaintReference? = nil) {
         self.target = target
         self.percentage = percentage
         self.referencePaint = referencePaint
     }
 
+    /// 用紧凑数字形式显示占比，避免无意义的小数尾零。
     var percentageText: String { String(format: "%g", percentage) }
+    /// 有商品参考时保留系列与色号，普通颜色则显示 RGB。
     var colorDescription: String {
         referencePaint.map { "\($0.summary) · \(target.description)" } ?? target.description
     }
 }
 
+/// 已校验的比例合色请求，至少包含两组有效参考色。
 struct ColorBlendRequest: Equatable, Sendable {
     let sources: [ColorBlendSource]
 
+    /// 校验占比、RGB 和商品引用一致性；不强制输入占比之和等于 100。
     init(sources: [ColorBlendSource]) throws {
         guard sources.count >= 2,
               sources.allSatisfy({
@@ -38,9 +48,12 @@ struct ColorBlendRequest: Equatable, Sendable {
         self.sources = sources
     }
 
+    /// 归一化时使用的原始占比总量，构造器已保证它有效且大于零。
     var totalPercentage: Double { sources.reduce(0) { $0 + $1.percentage } }
+    /// 供界面和提示词展示的总占比。
     var totalPercentageText: String { String(format: "%g", totalPercentage) }
 
+    /// 同时列出输入占比和归一化占比，保留商品参考色的预览限制。
     var sourceDescription: String {
         sources.enumerated().map { index, source in
             let normalized = source.percentage / totalPercentage * 100
@@ -49,6 +62,7 @@ struct ColorBlendRequest: Equatable, Sendable {
         }.joined(separator: "\n")
     }
 
+    /// 要求 AI 先估算实体颜料合成目标，再生成该目标的三色调色配方。
     func prompt(paintSet: MixingPaintSet = .defaultSelection) -> String {
         """
         你是实体颜料的色彩合成与调色助手。请由 AI 完成多颜色合成，并给出可执行的三色配方。
@@ -71,6 +85,7 @@ struct ColorBlendRequest: Equatable, Sendable {
         """
     }
 
+    /// 将合成说明与现有三色 Schema 组合，保持最终配方约束一致。
     static func outputSchema(paintSet: MixingPaintSet = .defaultSelection) throws -> Data {
         let channel: [String: Any] = ["type": "integer", "minimum": 0, "maximum": 255]
         let target: [String: Any] = [
@@ -91,6 +106,7 @@ struct ColorBlendRequest: Equatable, Sendable {
         ], options: [.sortedKeys])
     }
 
+    /// 解码合成结果与配方，使用本次真实输入构造来源记录。
     func decodePalette(
         _ data: Data, model: AIModelSelection = AIModelSelection(),
         paintSet: MixingPaintSet = .defaultSelection
@@ -104,6 +120,7 @@ struct ColorBlendRequest: Equatable, Sendable {
         } catch {
             throw MixingError.invalidRecipe("AI 未返回完整的合成颜色、说明和三色配方，请重新生成。")
         }
+        // 输入来源以本地请求为准，防止模型回传时改写用户输入的比例或参考色。
         // Keep the original inputs from this request; never replace them with an AI-generated echo.
         let synthesis = try ColorBlendSynthesis(
             sources: sources,
@@ -115,7 +132,9 @@ struct ColorBlendRequest: Equatable, Sendable {
         )
     }
 
+    /// 仅用于解析 AI 响应的传输结构，不直接作为持久化数据。
     private struct BlendPaletteResponse: Decodable {
+        /// AI 只负责返回估算目标和解释，不能替换用户提供的输入列表。
         struct SynthesisResponse: Decodable {
             let target: MixingTarget
             let explanation: String
@@ -126,11 +145,13 @@ struct ColorBlendRequest: Equatable, Sendable {
     }
 }
 
+/// 可持久化的合色来源，随每份配方保存，便于之后查看或复用输入。
 struct ColorBlendSynthesis: Codable, Equatable, Sendable {
     let sources: [ColorBlendSource]
     let target: MixingTarget
     let explanation: String
 
+    /// 复核原始输入及合成目标，说明必须非空且长度受限。
     init(sources: [ColorBlendSource], target: MixingTarget, explanation: String) throws {
         _ = try ColorBlendRequest(sources: sources)
         let explanation = explanation.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -143,10 +164,12 @@ struct ColorBlendSynthesis: Codable, Equatable, Sendable {
         self.explanation = explanation
     }
 
+    /// 持久化字段覆盖原始输入、估算目标与解释。
     private enum CodingKeys: String, CodingKey {
         case sources, target, explanation
     }
 
+    /// 旧存档或外部数据解码后仍执行同一校验，不绕过领域约束。
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         try self.init(
@@ -156,6 +179,7 @@ struct ColorBlendSynthesis: Codable, Equatable, Sendable {
         )
     }
 
+    /// 输出可复制的合色来源说明，强调输入比例被按相对关系使用。
     var formattedText: String {
         let inputs = sources.enumerated().map { index, source in
             "\(index + 1). \(source.colorDescription) · \(source.percentageText)%"
