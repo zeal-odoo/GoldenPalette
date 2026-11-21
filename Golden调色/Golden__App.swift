@@ -16,14 +16,15 @@ struct Golden__App: App {
             CodexStartupView(
                 state: $startup, configuration: configuration,
                 check: { configuration in try await Self.checkCodex(configuration: configuration) }
-            ) {
-                ContentView(library: $library, configuration: configuration, generateBlend: { request, paintSet, configuration in
+            ) { connectionBar in
+                ContentView(library: $library, configuration: configuration, connectionBar: connectionBar, generateBlend: { request, paintSet, configuration in
                     try await Self.generateBlendedRecipe(request: request, paintSet: paintSet, configuration: configuration)
                 }) { target, referencePaint, paintSet, configuration in
                     try await Self.generateRecipe(target: target, referencePaint: referencePaint, paintSet: paintSet, configuration: configuration)
                 }
             }
         }
+        .windowToolbarStyle(.unified)
 
         Settings {
             AISettingsView(configuration: configurationBinding)

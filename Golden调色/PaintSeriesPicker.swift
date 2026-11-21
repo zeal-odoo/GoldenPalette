@@ -32,6 +32,6 @@ struct PaintSeriesPicker: View {
             }
             .accessibilityIdentifier("\(identifierPrefix)PaintSeriesPicker")
         }
-        .pickerStyle(.menu)
+        .workspaceMenuPicker()
     }
 }

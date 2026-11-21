@@ -66,7 +66,7 @@ struct ManualStudyView: View {
     /// 组合侧栏、文档和状态区，并集中连接文件选择器及编辑弹窗。
     var body: some View {
         VStack(spacing: 0) {
-            header.padding(20)
+            header.padding(.horizontal, 20).padding(.vertical, 14)
             Divider()
             if let errorMessage {
                 HStack(alignment: .top) {
@@ -82,10 +82,13 @@ struct ManualStudyView: View {
                 Text("模型要求或说明书已变更。请重新考证，旧标记暂不显示和导出。")
                     .font(.callout).foregroundColor(.orange).padding(8)
             }
-            HStack(spacing: 0) {
-                sidebar.frame(width: 340)
-                Divider()
+            HSplitView {
+                sidebar
+                    .frame(minWidth: 260, idealWidth: 320, maxWidth: 400)
+                    .background(AppPalette.canvas)
                 documentPanel
+                    .frame(minWidth: 428)
+                    .background(AppPalette.cardSurface)
             }
             Divider()
             HStack {
@@ -102,7 +105,7 @@ struct ManualStudyView: View {
             }
             .font(.callout).padding(12)
         }
-        .frame(width: 1_120, height: 740)
+        .frame(minWidth: 760, idealWidth: 1_040, minHeight: 500, idealHeight: 700)
         .interactiveDismissDisabled(isDirty || isBusy)
         .task { await loadArchive() }
         // 要求改变会使旧考证失效；取消未完成的定位，避免继续放置旧颜色。
@@ -163,21 +166,26 @@ struct ManualStudyView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("说明书与涂装考证").font(.title2.bold())
-                Text(projectName).foregroundColor(.secondary)
+                Text(projectName).foregroundStyle(.secondary).lineLimit(1).help(projectName)
             }
             Spacer()
             Button("保存") { saveArchive() }
+                .workspaceButton(prominent: true)
                 .disabled(isBusy || !canSave || storageFailed || !isDirty)
                 .accessibilityIdentifier("manualSaveButton")
             Button("导出标注 PDF") { prepareExport() }
+                .workspaceButton()
                 .disabled(isBusy || !archive.researchIsCurrent || original == nil)
                 .accessibilityIdentifier("manualExportButton")
             Button("关闭") {
                 work?.cancel()
                 if isDirty { showCloseConfirmation = true } else { dismiss() }
             }
+            .workspaceButton()
+            .keyboardShortcut(.cancelAction)
             .accessibilityIdentifier("manualCloseButton")
         }
+        .workspaceGlassGroup()
     }
 
     /// 在要求、配色与证据之间切换，保留右侧 PDF 的浏览位置。
@@ -208,11 +216,13 @@ struct ManualStudyView: View {
             Text("模型套件").font(.headline)
             TextField("品牌、货号、比例、型号", text: $archive.input.kit)
                 .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("模型套件")
                 .accessibilityIdentifier("manualKitField")
             Text("涂装要求").font(.headline)
             TextEditor(text: $archive.input.theme)
                 .frame(height: 100)
                 .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.secondary.opacity(0.3)))
+                .accessibilityLabel("涂装要求")
                 .accessibilityIdentifier("manualThemeField")
             Text("例如：1944 年诺曼底、具体部队与车号；保留内饰原厂色。")
                 .font(.caption).foregroundColor(.secondary)
@@ -249,7 +259,7 @@ struct ManualStudyView: View {
             }
             Divider()
             Button(archive.research == nil ? "AI 考证配色" : "重新考证配色") { researchColors() }
-                .buttonStyle(.borderedProminent)
+                .workspaceButton(prominent: true)
                 .disabled(original == nil)
                 .accessibilityIdentifier("manualResearchButton")
             Text("导入后可先翻到配色表页。考证会参考封面、当前页及可提取的文字，结合联网资料核对主题。重新考证成功后会清除旧标记。")
@@ -309,68 +319,97 @@ struct ManualStudyView: View {
     /// 组织翻页、PDF 预览、自动标注、手动标记和当前页结果列表。
     private var documentPanel: some View {
         VStack(spacing: 0) {
-            HStack {
-                Button { changePage(by: -1) } label: { Image(systemName: "chevron.left") }
-                    .disabled(pageIndex == 0)
-                Text(pageCount == 0 ? "尚未导入说明书" : "第 \(pageIndex + 1) / \(pageCount) 页")
-                    .monospacedDigit().accessibilityIdentifier("manualPageLabel")
-                Button { changePage(by: 1) } label: { Image(systemName: "chevron.right") }
-                    .disabled(pageIndex + 1 >= pageCount)
-                Spacer()
-                Text("AI 已处理 \(archive.analyzedPageIndices.count)/\(pageCount) 页").font(.caption).foregroundColor(.secondary)
-            }
-            .padding(12)
-            if let preview {
-                ManualPDFPreview(
-                    document: preview, pageIndex: pageIndex,
-                    onPlace: placingMark == nil ? nil : { page, point in placeMark(on: page, at: point) }
-                )
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "doc.richtext").font(.system(size: 42)).foregroundColor(.secondary)
-                    Text("从左侧查找说明书，或导入 PDF")
-                    Text("支持扫描版；无法辨认的零件会标为待确认。")
-                        .font(.caption).foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            Divider()
-            HStack {
-                Button(currentPage == nil ? "标注当前页" : "重新标注本页") { annotatePages([pageIndex]) }
-                    .disabled(!canAnnotate || isBusy)
-                    .accessibilityIdentifier("manualAnnotatePageButton")
-                Button("继续标注剩余 \(remainingPages.count) 页") { annotatePages(remainingPages) }
-                    .disabled(!canAnnotate || isBusy || remainingPages.isEmpty)
-                Spacer()
-                Button("手动加标记") { addMark() }
-                    .disabled(!canAnnotate || isBusy || (currentPage?.marks.count ?? 0) >= 80)
-                    .help("每页最多 80 个标记")
-            }
-            .padding(10)
-            if placingMark != nil {
-                HStack {
-                    Text("点击说明书上的零件，放置此标记。").foregroundColor(.orange)
-                    Spacer()
-                    Button("取消定位") { placingMark = nil }
-                }.font(.callout).padding(.horizontal, 12).padding(.bottom, 8)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    if let currentPage, archive.researchIsCurrent {
-                        Text(currentPage.notes).font(.callout).textSelection(.enabled)
-                        if currentPage.marks.isEmpty {
-                            Text("本页没有可定位的涂装标记，请核对上方说明。").foregroundColor(.secondary)
-                        }
-                        ForEach(currentPage.marks) { mark in markRow(mark) }
-                    } else {
-                        Text("本页尚未处理。配色考证完成后，可逐页标注或处理剩余页。")
-                            .font(.callout).foregroundColor(.secondary)
+            Group {
+                if let preview {
+                    ManualPDFPreview(
+                        document: preview, pageIndex: pageIndex,
+                        onPlace: placingMark == nil ? nil : { page, point in placeMark(on: page, at: point) }
+                    )
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "doc.richtext")
+                            .font(.system(size: 42, weight: .light))
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("导入模型说明书").font(.title2.weight(.semibold))
+                        Text("选择 PDF，或在左侧按模型套件查找说明书。")
+                            .foregroundStyle(.secondary)
+                        Button("选择 PDF…") { isImporting = true }
+                            .workspaceButton()
+                            .disabled(isBusy || storageFailed || !canSave)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading).padding(12)
             }
-            .frame(height: 170)
+            .workspaceBar(edge: .top) { pageControls }
+            if preview != nil {
+                Divider()
+                HStack {
+                    Button(currentPage == nil ? "标注当前页" : "重新标注本页") { annotatePages([pageIndex]) }
+                        .disabled(!canAnnotate || isBusy)
+                        .accessibilityIdentifier("manualAnnotatePageButton")
+                    Button("继续标注剩余 \(remainingPages.count) 页") { annotatePages(remainingPages) }
+                        .disabled(!canAnnotate || isBusy || remainingPages.isEmpty)
+                    Spacer()
+                    Button("手动加标记") { addMark() }
+                        .disabled(!canAnnotate || isBusy || (currentPage?.marks.count ?? 0) >= 80)
+                        .help("每页最多 80 个标记")
+                }
+                .padding(10)
+                if placingMark != nil {
+                    HStack {
+                        Text("点击说明书上的零件，放置此标记。").foregroundColor(.orange)
+                        Spacer()
+                        Button("取消定位") { placingMark = nil }
+                    }.font(.callout).padding(.horizontal, 12).padding(.bottom, 8)
+                }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let currentPage, archive.researchIsCurrent {
+                            Text(currentPage.notes).font(.callout).textSelection(.enabled)
+                            if currentPage.marks.isEmpty {
+                                Text("本页没有可定位的涂装标记，请核对上方说明。").foregroundColor(.secondary)
+                            }
+                            ForEach(currentPage.marks) { mark in markRow(mark) }
+                        } else {
+                            Text("本页尚未处理。配色考证完成后，可逐页标注或处理剩余页。")
+                                .font(.callout).foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                }
+                .frame(height: 170)
+            }
         }
+    }
+
+    private var pageControls: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Button { changePage(by: -1) } label: {
+                    Label("上一页", systemImage: "chevron.left")
+                }
+                .disabled(pageIndex == 0)
+                Text(pageCount == 0 ? "尚未导入说明书" : "第 \(pageIndex + 1) / \(pageCount) 页")
+                    .monospacedDigit()
+                    .accessibilityIdentifier("manualPageLabel")
+                Button { changePage(by: 1) } label: {
+                    Label("下一页", systemImage: "chevron.right")
+                }
+                .disabled(pageIndex + 1 >= pageCount)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .workspaceControlCapsule()
+            Spacer()
+            Text("AI 已处理 \(archive.analyzedPageIndices.count)/\(pageCount) 页")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
     }
 
     /// 显示一个零件的颜色、依据及核对状态，并提供定位、编辑和删除操作。
@@ -537,7 +576,7 @@ struct ManualStudyView: View {
         }
     }
 
-    /// 保存当前快照，成功后更新已保存基线；可用于“保存并关闭”。
+    /// 保存当前快照，成功后更新已保存基线；可用于“保存并关闭"。
     private func saveArchive(closeAfter: Bool = false) {
         guard canSave, !storageFailed else { return }
         let snapshot = archive
@@ -671,6 +710,7 @@ private struct ManualMarkEditor: View {
             Picker("涂装颜色", selection: $draft.colorID) {
                 ForEach(colors) { Text($0.displayName).tag($0.id) }
             }
+            .workspaceMenuPicker()
             Text("标注说明").font(.headline)
             TextEditor(text: $draft.reason).frame(height: 90)
             Toggle("对应关系仍有疑问", isOn: $draft.uncertain)
@@ -678,6 +718,7 @@ private struct ManualMarkEditor: View {
                 .disabled(request.isNew)
             HStack {
                 Button("取消") { dismiss() }
+                    .workspaceButton()
                 Spacer()
                 Button(request.isNew ? "添加并定位" : "保存修改") {
                     draft.part = draft.part.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -687,7 +728,7 @@ private struct ManualMarkEditor: View {
                     onSave(draft)
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .workspaceButton(prominent: true)
                 .disabled(draft.part.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }

@@ -120,8 +120,9 @@ struct AIMixingView: View {
                     Text("AI 调色 · \(projectName)")
                         .font(.title2.weight(.semibold))
                         .lineLimit(1)
+                        .help(projectName)
                         .accessibilityIdentifier("mixingProjectTitle")
-                    Text("调色用漆：\(paintSet.title) · \(paintSet.paints.count) 色 · 阴影/高光各用 20 滴本色追加")
+                    Text("调色用漆：\(paintSet.title) · \(paintSet.paints.count) 色")
                         .accessibilityIdentifier("mixingPaintSummary")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -131,36 +132,41 @@ struct AIMixingView: View {
                     cancelGeneration()
                     dismiss()
                 }
+                .workspaceButton()
                 .keyboardShortcut(.cancelAction)
                 .accessibilityIdentifier("closeAIMixingButton")
             }
-            .padding(20)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
 
             Divider()
 
             if let errorMessage {
                 // Keep failures visible even when the ingredients or recipe were scrolled down.
                 ScrollView {
-                    Text(errorMessage)
-                        .foregroundStyle(AppPalette.primary)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityIdentifier("mixingError")
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
+                        Text(errorMessage)
+                            .textSelection(.enabled)
+                            .accessibilityIdentifier("mixingError")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
                 }
                 .frame(height: 84)
                 Divider()
             }
 
-            HStack(alignment: .top, spacing: 0) {
+            HSplitView {
                 ScrollView {
                     inputPanel
                         .padding(20)
                 }
                 .accessibilityIdentifier("mixingInputScrollView")
-                .frame(width: 296)
-                Divider()
+                .frame(minWidth: 260, idealWidth: 296, maxWidth: 360)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         if let result {
@@ -174,22 +180,30 @@ struct AIMixingView: View {
                                     .accessibilityIdentifier("mixingWaitDescription")
                                     .foregroundStyle(.secondary)
                                 Button("取消生成", action: cancelGeneration)
+                                    .workspaceButton()
                                     .accessibilityIdentifier("cancelMixingButton")
                             }
+                            .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.vertical, 40)
                         } else {
-                            Text("调色原料 · GOLDEN \(paintSet.paints.count) 色").font(.headline)
-                            Text("先调本色 200 滴，再各取 20 滴调阴影和高光。AI 会列出需追加的颜色和滴数，保持自然色相并拉开明暗。")
-                                .foregroundStyle(.secondary)
-                            Text("AI 只使用当前选择的这一套原料。品牌标准色用于确定目标，不会作为调色原料。")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            LazyVStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("可用颜料").font(.title2.weight(.semibold))
+                                Text("先调 200 滴本色，再各取 20 滴调制阴影与高光。")
+                                    .foregroundStyle(.secondary)
+                            }
+                            LazyVStack(alignment: .leading, spacing: 12) {
                                 ForEach(paintSet.series) { series in
+                                    HStack(spacing: 0) {
+                                        ForEach(series.paints) { paint in
+                                            Color(.sRGB, red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255)
+                                        }
+                                    }
+                                    .frame(height: 34)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .accessibilityHidden(true)
                                     Text("\(series.title) · \(series.paints.count) 色")
-                                        .font(.subheadline.weight(.semibold))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.top, 8)
+                                        .font(.headline)
+                                        .padding(.top, 4)
                                     Text(series.previewNote)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
@@ -211,37 +225,9 @@ struct AIMixingView: View {
                 // New requests and their results start at the top, so progress is always visible.
                 .id(requestID)
             }
-
-            Divider()
-
-            HStack {
-                Text(canSave ? "三份配方将添加到当前项目" : "项目已删除或无法写入，可复制配方后关闭")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("复制三色配方") {
-                    guard let result else { return }
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(result.formattedText, forType: .string)
-                }
-                .disabled(result == nil || isGenerating)
-
-                Button("保存到项目") {
-                    guard let result else { return }
-                    if onSave(result) {
-                        dismiss()
-                    } else {
-                        errorMessage = "保存未完成，项目可能已被删除或无法写入。你可以先复制配方。"
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(AppPalette.primary)
-                .disabled(result == nil || isGenerating || !canSave)
-                .accessibilityIdentifier("saveAIMixingButton")
-            }
-            .padding(16)
         }
-        .frame(width: 900, height: 680)
+        .workspaceBar(edge: .bottom) { resultActions }
+        .frame(minWidth: 740, idealWidth: 900, minHeight: 500, idealHeight: 680)
         .background(AppPalette.canvas)
         // 任一输入或套装变更都使旧配方失效；处理系统取色器仍可能异步返回的修改。
         .onChange(of: redText) { _ in clearResult() }
@@ -259,6 +245,40 @@ struct AIMixingView: View {
         .onDisappear(perform: cancelGeneration)
     }
 
+    private var resultActions: some View {
+        HStack {
+            if result != nil || !canSave {
+                Text(canSave ? "三份配方将添加到当前项目" : "项目已删除或无法写入，可复制配方后关闭")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("复制三色配方") {
+                guard let result else { return }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(result.formattedText, forType: .string)
+            }
+            .workspaceButton()
+            .disabled(result == nil || isGenerating)
+
+            Button("保存到项目") {
+                guard let result else { return }
+                if onSave(result) {
+                    dismiss()
+                } else {
+                    errorMessage = "保存未完成，项目可能已被删除或无法写入。你可以先复制配方。"
+                }
+            }
+            .workspaceButton(prominent: true)
+            .tint(AppPalette.primary)
+            .disabled(result == nil || isGenerating || !canSave)
+            .accessibilityIdentifier("saveAIMixingButton")
+        }
+        .workspaceGlassGroup()
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
     // MARK: - 输入与操作区域
     /// 先选实际原料套装，再按模式展示目标输入和生成控制。
     private var inputPanel: some View {
@@ -271,21 +291,25 @@ struct AIMixingView: View {
                     }
                 }
                 .labelsHidden()
-                .pickerStyle(.menu)
+                .workspaceMenuPicker()
                 .accessibilityIdentifier("mixingPaintSetPicker")
                 Text("仅使用所选套装；切换后需重新生成配方。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Picker("输入方式", selection: $inputMode) {
-                ForEach(MixingInputMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("输入方式").font(.headline)
+                Picker("输入方式", selection: $inputMode) {
+                    ForEach(MixingInputMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
                 }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .disabled(isGenerating)
+                .accessibilityIdentifier("mixingInputMode")
             }
-            .pickerStyle(.segmented)
-            .disabled(isGenerating)
-            .accessibilityIdentifier("mixingInputMode")
 
             switch inputMode {
             case .single:
@@ -374,7 +398,7 @@ struct AIMixingView: View {
     /// 编辑单个 sRGB 目标，颜色预览与有效性提示实时同步。
     private var singleColorInput: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("本色（输入颜色）").font(.headline)
+            Text("目标本色").font(.headline)
             RoundedRectangle(cornerRadius: 14)
                 .fill(target?.color ?? .gray)
                 .overlay {
@@ -398,7 +422,7 @@ struct AIMixingView: View {
 
             Text(target.map { "sRGB · \($0.hex)" } ?? "请输入 0～255 之间的 RGB 整数")
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(target == nil ? AppPalette.primary : AppPalette.onSurfaceVariant)
+                .foregroundStyle(target == nil ? Color.red : Color.secondary)
                 .accessibilityIdentifier("mixingRGBStatus")
         }
     }
@@ -407,7 +431,7 @@ struct AIMixingView: View {
     private var generationControls: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("本色 200 滴 · 阴影/高光各取 20 滴追加").font(.headline)
+                Text("生成模型").font(.headline)
                 Text((result?.base.model ?? (isGenerating ? activeModel : nil) ?? configuration.model).summary)
                     .accessibilityIdentifier("mixingModelSummary")
                     .font(.caption.monospaced())
@@ -418,7 +442,7 @@ struct AIMixingView: View {
                 Label(inputMode == .blend ? "AI 合成并调色" : (result == nil ? "生成三色配方" : "重新生成三色"), systemImage: "sparkles")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .workspaceButton(prominent: true)
             .tint(AppPalette.primary)
             .controlSize(.large)
             .disabled(!hasValidInput || isGenerating || !configuration.isValid || !canSave)
@@ -432,11 +456,8 @@ struct AIMixingView: View {
             if !configuration.isValid {
                 Text("请先在系统设置中填写模型 ID。")
                     .font(.caption)
-                    .foregroundStyle(AppPalette.primary)
+                    .foregroundStyle(.red)
             }
-            Text("模型与推理强度可在“系统设置 → AI 配置”中修改。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
             Spacer(minLength: 0)
         }
     }
@@ -528,9 +549,9 @@ struct MixingPaletteDetails: View {
     /// 并列展示三种目标色，选中角色后切换该份用量和步骤。
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("三色配方 · 从本色追加调制")
-                .font(.headline)
-            Text(palette.preparationSummary + "点击色块查看用量与步骤。")
+            Text("三色配方")
+                .font(.title2.weight(.semibold))
+            Text(palette.preparationSummary)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -544,7 +565,14 @@ struct MixingPaletteDetails: View {
                             RoundedRectangle(cornerRadius: 7)
                                 .fill(recipe.target.color)
                                 .frame(height: 44)
-                            Text(role.title).font(.subheadline.weight(.semibold))
+                            HStack(spacing: 4) {
+                                if selectedRole == role {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.bold))
+                                        .accessibilityHidden(true)
+                                }
+                                Text(role.title).font(.subheadline.weight(.semibold))
+                            }
                             Text(recipe.target.hex).font(.caption.monospaced())
                         }
                         .padding(10)

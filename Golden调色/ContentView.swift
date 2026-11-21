@@ -78,89 +78,21 @@ Yellow Green|6675|SoFlat|AAD62C|false
 """.split(separator: "\n").map(String.init)
 }
 
-// MARK: - 界面颜色与公共装饰
-/// 集中维护浅色/深色外观的语义色，避免各组件独立硬编码主题。
+// MARK: - 界面颜色
+/// 中性工作表面避免干扰色样，控件沿用用户的 macOS 强调色。
 enum AppPalette {
-    // 文本、纸面与装饰色：成对定义浅色与深色模式的显示值。
-    static let burntInk = adaptive(light: hex(0x1A1A1A), dark: hex(0xF4EDE1))
-    static let deepInk = adaptive(light: hex(0x333333), dark: hex(0xD8CEC0))
-    static let lightInk = adaptive(light: hex(0x666666), dark: hex(0xAEA498))
-    static let clearInk = adaptive(light: hex(0x999999), dark: hex(0x746E66))
-    static let paper = adaptive(light: hex(0xF8F5F0), dark: hex(0x101315))
-    static let ricePaper = adaptive(light: hex(0xFAF0E6), dark: hex(0x171613))
-    static let ivory = adaptive(light: hex(0xFFFFF0), dark: hex(0x1E1A16))
-    static let cinnabar = adaptive(light: hex(0xC41E3A), dark: hex(0xE04B62))
-    static let mountainGreen = adaptive(light: hex(0x2E8B57), dark: hex(0x52A875))
-    static let antiqueGold = adaptive(light: hex(0xD4AF37), dark: hex(0xE0B84A))
-    // 控件语义色：主操作、辅助操作与容器色共享基础主题。
-    static let primary = cinnabar
-    static let onPrimary = adaptive(light: .white, dark: hex(0x16090C))
-    static let primaryContainer = adaptive(light: hex(0xF5C7B8), dark: hex(0x5B1C28, alpha: 0.84))
-    static let onPrimaryContainer = burntInk
-    static let secondary = mountainGreen
-    static let secondaryContainer = adaptive(light: hex(0xCCE6D1), dark: hex(0x17382B, alpha: 0.86))
-    static let tertiary = antiqueGold
-    static let tertiaryContainer = adaptive(light: hex(0xEDDC94), dark: hex(0x4B3B17, alpha: 0.86))
-    // 内容表面、描边和阴影，为项目列表及浮动编辑器提供一致层次。
-    static let surface = paper
-    static let canvas = adaptive(light: hex(0xF5F5F3), dark: hex(0x151617))
-    static let cardSurface = adaptive(light: hex(0xFFFFFF), dark: hex(0x222426))
-    static let surfaceContainerLowest = adaptive(light: hex(0xFFFFFF, alpha: 0.36), dark: hex(0xFFFFFF, alpha: 0.07))
-    static let surfaceContainerLow = adaptive(light: hex(0xFFFFFF, alpha: 0.44), dark: hex(0xFFFFFF, alpha: 0.10))
-    static let surfaceContainer = adaptive(light: hex(0xFFFFFF, alpha: 0.52), dark: hex(0xFFFFFF, alpha: 0.13))
-    static let surfaceContainerHigh = adaptive(light: hex(0xFFFFFF, alpha: 0.64), dark: hex(0xFFFFFF, alpha: 0.18))
-    static let onSurface = burntInk
-    static let onSurfaceVariant = lightInk
-    static let outlineVariant = adaptive(light: hex(0x333333, alpha: 0.14), dark: hex(0xFFFFFF, alpha: 0.16))
-    static let shadow = adaptive(light: hex(0x1A1A1A, alpha: 0.14), dark: hex(0x000000, alpha: 0.36))
-    /// 分栏布局在默认尺寸下使用的侧栏宽度。
-    static let sidebarWidth: CGFloat = 282
+    static let primary = Color.accentColor
+    static let primaryContainer = Color.accentColor.opacity(0.12)
+    static let canvas = Color(nsColor: .windowBackgroundColor)
+    static let cardSurface = Color(nsColor: .textBackgroundColor)
+    static let onSurface = Color.primary
+    static let onSurfaceVariant = Color.secondary
+    static let outlineVariant = Color(nsColor: .separatorColor)
+    static let sidebarWidth: CGFloat = 240
 
-    /// 由当前 AppKit 外观动态选择颜色，系统切换主题时自动更新。
-    private static func adaptive(light: NSColor, dark: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            let match = appearance.bestMatch(from: [.darkAqua, .aqua])
-            return match == .darkAqua ? dark : light
-        })
-    }
-
-    /// 从 RGB 整数和透明度构造 AppKit 颜色。
-    private static func hex(_ value: Int, alpha: CGFloat = 1) -> NSColor {
-        NSColor(
-            calibratedRed: CGFloat((value >> 16) & 0xFF) / 255,
-            green: CGFloat((value >> 8) & 0xFF) / 255,
-            blue: CGFloat(value & 0xFF) / 255,
-            alpha: alpha
-        )
-    }
-}
-
-/// 印章式装饰组件，文字与尺寸由调用位置决定。
-struct InkSeal: View {
-    var text: String
-    var size: CGFloat = 42
-
-    /// 将文字叠放于略带旋转的朱红圆角印章中。
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(AppPalette.cinnabar)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(AppPalette.cinnabar.opacity(0.75), lineWidth: 2)
-                        .padding(4)
-                )
-
-            Text(text)
-                .font(.system(size: size * 0.34, weight: .bold, design: .serif))
-                .foregroundStyle(.white.opacity(0.92))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.55)
-                .padding(7)
-        }
-        .frame(width: size, height: size)
-        .rotationEffect(.degrees(-4))
+    static var librarySymbol: String {
+        if #available(macOS 13.0, *) { return "swatchpalette.fill" }
+        return "paintpalette.fill"
     }
 }
 
@@ -173,88 +105,10 @@ final class DraggableGlassPanel: NSPanel {
     override var canBecomeMain: Bool { true }
 }
 
-/// 新建项目窗口的生命周期管理，保存动作交回主界面。
-final class NewRecipeWindowController: NSWindowController, NSWindowDelegate {
-    private var onSave: (String) -> Void = { _ in }
-    private var onClose: () -> Void = { }
-    private let windowSize = NSSize(width: 400, height: 224)
-
-    /// 创建固定尺寸面板并注入保存、取消回调；弱引用避免窗口闭包形成循环持有。
-    init(onSave: @escaping (String) -> Void, onClose: @escaping () -> Void) {
-        let panel = DraggableGlassPanel(
-            contentRect: NSRect(origin: .zero, size: windowSize),
-            styleMask: [.titled, .closable, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-
-        super.init(window: panel)
-
-        self.onSave = onSave
-        self.onClose = onClose
-
-        panel.delegate = self
-        panel.title = "新建项目"
-        panel.isMovableByWindowBackground = true
-        panel.isMovable = true
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.isReleasedWhenClosed = false
-        panel.hidesOnDeactivate = false
-        panel.becomesKeyOnlyIfNeeded = false
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
-        panel.showsResizeIndicator = false
-        panel.minSize = windowSize
-        panel.maxSize = windowSize
-        panel.setContentSize(windowSize)
-        panel.level = .floating
-        panel.collectionBehavior = [.fullScreenAuxiliary]
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
-        let hostingView = NSHostingView(
-            rootView: NewRecipeWindowContent(
-                onSave: { [weak self] text in
-                    self?.onSave(text)
-                    self?.dismissPanel()
-                },
-                onCancel: { [weak self] in
-                    self?.dismissPanel()
-                }
-            )
-        )
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
-        hostingView.layer?.masksToBounds = false
-        panel.contentView = hostingView
-        panel.center()
-    }
-
-    /// 仅支持代码创建窗口，不从归档恢复。
-    required init?(coder: NSCoder) {
-        nil
-    }
-
-    /// 关闭后清空回调，再通知主界面释放控制器。
-    func windowWillClose(_ notification: Notification) {
-        let closeAction = onClose
-        onSave = { _ in }
-        onClose = { }
-        closeAction()
-    }
-
-    /// 统一通过原生关闭流程触发清理和关闭通知。
-    private func dismissPanel() {
-        close()
-    }
-}
-
 /// 新建项目表单，只负责名称草稿与确认操作。
-struct NewRecipeWindowContent: View {
-    var onSave: (String) -> Void
-    var onCancel: () -> Void
+struct NewProjectSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let onSave: (String) -> Void
 
     @State private var text = ""
     @FocusState private var isNameFocused: Bool
@@ -262,45 +116,32 @@ struct NewRecipeWindowContent: View {
     /// 编辑项目名称并提供键盘提交、取消及初始焦点。
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("新建项目")
-                        .font(.system(size: 22, weight: .semibold, design: .serif))
-                        .foregroundStyle(AppPalette.burntInk)
-                    Text("为这次模型、场景或绘画命名")
-                        .font(.caption)
-                        .foregroundStyle(AppPalette.onSurfaceVariant)
-                }
-
-                Spacer()
-
-                InkSeal(text: "新谱", size: 38)
+            Text("新建项目").font(.title2.weight(.semibold))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("项目名称")
+                    .font(.headline)
+                TextField("例如：骑士模型、森林场景", text: $text)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("项目名称")
+                    .focused($isNameFocused)
+                    .accessibilityIdentifier("recipeNameField")
+                    .onSubmit(save)
             }
-
-            TextField("例如：骑士模型、森林场景", text: $text)
-                .textFieldStyle(.roundedBorder)
-                .focused($isNameFocused)
-                .accessibilityIdentifier("recipeNameField")
-                .onSubmit(save)
-
             HStack {
-                Button("取消", action: onCancel)
-                    .floatingPanelButtonStyle()
-                    .keyboardShortcut(.cancelAction)
-
                 Spacer()
-
+                Button("取消") { dismiss() }
+                    .workspaceButton()
+                    .keyboardShortcut(.cancelAction)
                 Button("保存", action: save)
-                    .floatingPanelButtonStyle(prominent: true)
+                    .workspaceButton(prominent: true)
+                    .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("saveRecipeButton")
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+            .workspaceGlassGroup()
         }
-        .padding(18)
-        .frame(width: 360)
-        .floatingLiquidGlassPanel(cornerRadius: 22)
-        .padding(.top, 16)
-        .frame(width: 400, height: 224)
+        .padding(24)
+        .frame(width: 392)
         .onAppear {
             DispatchQueue.main.async {
                 isNameFocused = true
@@ -313,6 +154,7 @@ struct NewRecipeWindowContent: View {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
         onSave(trimmedText)
+        dismiss()
     }
 }
 
@@ -378,8 +220,6 @@ final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = false
         panel.isReleasedWhenClosed = false
-        // 标题栏由 AppKit 绘制，内容区独立使用毛玻璃背景。
-        // The content view sits below the title bar, so AppKit must draw its background.
         panel.titlebarAppearsTransparent = false
         panel.level = .floating
         panel.collectionBehavior = [.fullScreenAuxiliary]
@@ -417,22 +257,6 @@ final class ColorEditorWindowController: NSWindowController, NSWindowDelegate {
         onClose = { _ in }
         closeAction(self)
     }
-}
-
-/// 将 AppKit 的窗后材质嵌入 SwiftUI，供颜色与已存配方窗口共用。
-struct FrostedWindowBackground: NSViewRepresentable {
-    /// 创建始终激活的 popover 材质背景。
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .popover
-        // Use the same behind-window material for the color editor and saved recipes.
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
-    }
-
-    /// 材质参数固定，SwiftUI 更新时无需重复配置原生视图。
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) { }
 }
 
 // MARK: - 颜色编辑表单
@@ -517,79 +341,59 @@ struct ColorEditorWindowContent: View {
 
     /// 左侧选择商品参考，右侧预览并微调 RGB 和名称。
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
+        HStack(spacing: 0) {
             paintLibrarySection
-                .frame(width: 330)
-
+                .frame(width: 306)
+                .background(AppPalette.canvas)
+            Divider()
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(mode.title)
-                            .font(.system(size: 24, weight: .regular, design: .serif))
-                            .foregroundStyle(AppPalette.deepInk)
-                        Text(editorPaintTitle)
-                            .font(.headline)
-                            .foregroundStyle(AppPalette.onSurface)
-                        Text("色样仅供参考，可按实物微调")
-                            .font(.caption)
-                            .foregroundStyle(AppPalette.onSurfaceVariant)
-                    }
-
-                    Spacer()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(editorPaintTitle)
+                        .font(.title2.weight(.semibold))
+                    Text("屏幕色样仅供参考，可按实物微调。")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
 
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(red: red / 255, green: green / 255, blue: blue / 255))
-                    .frame(height: 190)
-                    .overlay(alignment: .bottomLeading) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(colorName.isEmpty ? "未命名颜色" : colorName)
-                                .font(.title3.weight(.semibold))
-                            Text("RGB \(Int(clampedRGB(red))) \(Int(clampedRGB(green))) \(Int(clampedRGB(blue)))")
-                                .font(.caption.monospacedDigit())
-                        }
-                        .foregroundStyle(readableTextColor(red: red, green: green, blue: blue))
-                        .padding(16)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(.sRGB, red: red / 255, green: green / 255, blue: blue / 255))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(AppPalette.outlineVariant)
                     }
-                    .shadow(color: AppPalette.shadow, radius: 8, x: 0, y: 3)
+                    .accessibilityLabel("颜色预览")
+                    .accessibilityValue("RGB \(Int(clampedRGB(red))), \(Int(clampedRGB(green))), \(Int(clampedRGB(blue)))")
 
-                HStack {
-                    Text("名称")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(AppPalette.onSurfaceVariant)
-                        .frame(width: 42, alignment: .leading)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("颜色名称").font(.headline)
                     TextField("输入颜色名称", text: $colorName)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("颜色名称")
                         .accessibilityIdentifier("colorNameField")
                 }
-
-                VStack(spacing: 10) {
-                    colorSliderRow(title: "R", value: $red, tint: .red)
-                    colorSliderRow(title: "G", value: $green, tint: .green)
-                    colorSliderRow(title: "B", value: $blue, tint: .blue)
+                VStack(spacing: 8) {
+                    colorSliderRow(title: "R", value: $red)
+                    colorSliderRow(title: "G", value: $green)
+                    colorSliderRow(title: "B", value: $blue)
                 }
-
+                Divider()
                 HStack {
-                    Button("取消", action: onCancel)
-                        .liquidGlassButtonStyle()
-                        .keyboardShortcut(.cancelAction)
-
                     Spacer()
-
-                    Button(action: save) {
-                        Label("确定", systemImage: "checkmark")
-                    }
-                    .liquidGlassProminentButtonStyle()
-                    .keyboardShortcut(.defaultAction)
-                    .accessibilityIdentifier("saveColorButton")
+                    Button("取消", action: onCancel)
+                        .workspaceButton()
+                        .keyboardShortcut(.cancelAction)
+                    Button("确定", action: save)
+                        .workspaceButton(prominent: true)
+                        .keyboardShortcut(.defaultAction)
+                        .accessibilityIdentifier("saveColorButton")
                 }
-                .glassActionGroup()
+                .workspaceGlassGroup()
             }
-            .padding(16)
+            .padding(24)
         }
-        .padding(18)
-        .frame(width: Self.contentSize.width, height: Self.contentSize.height, alignment: .top)
-        .background(FrostedWindowBackground())
+        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
+        .background(AppPalette.cardSurface)
         // 切换系列清空旧色号和搜索词，避免同名色号被自动沿用。
         .onChange(of: paintSeries) { _ in
             selectedPaintCode = nil
@@ -604,7 +408,7 @@ struct ColorEditorWindowContent: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("参考色库", systemImage: "paintbrush.pointed")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.headline)
                     .foregroundStyle(AppPalette.onSurface)
 
                 Spacer()
@@ -628,20 +432,21 @@ struct ColorEditorWindowContent: View {
                             paintLibraryRow(paint)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityAddTraits(selectedPaintCode == paint.code ? .isSelected : [])
                     }
                 }
                 .padding(2)
             }
-            .frame(height: 320)
+            .frame(maxHeight: .infinity)
         }
-        .padding(14)
+        .padding(16)
     }
 
     /// 展示商品色样、系列和选择状态。
     private func paintLibraryRow(_ paint: CatalogPaint) -> some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color(red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255))
+                .fill(Color(.sRGB, red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255))
                 .frame(width: 34, height: 24)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
@@ -650,8 +455,8 @@ struct ColorEditorWindowContent: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(paint.displayName)
-                    .font(.caption)
-                    .foregroundStyle(AppPalette.onSurface)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                 Text("#\(paint.code) · \(paint.series.shortTitle)")
                     .font(.caption2.monospacedDigit())
@@ -668,19 +473,20 @@ struct ColorEditorWindowContent: View {
         .padding(7)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(selectedPaintCode == paint.code ? AppPalette.surfaceContainerHigh : Color.clear)
+                .fill(selectedPaintCode == paint.code ? AppPalette.primaryContainer : Color.clear)
         )
         .contentShape(Rectangle())
     }
 
     /// 让同一 RGB 通道同时支持滑块与受限数字输入。
-    private func colorSliderRow(title: String, value: Binding<Double>, tint: Color = .accentColor) -> some View {
+    private func colorSliderRow(title: String, value: Binding<Double>) -> some View {
         HStack {
             Text(title)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(tint)
+                .font(.caption.monospaced().weight(.semibold))
+                .foregroundStyle(.secondary)
                 .frame(width: 20, alignment: .leading)
             Slider(value: value, in: 0...255)
+                .accessibilityLabel("\(title) 通道")
             TextField("", value: value, formatter: Self.rgbFormatter)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 56)
@@ -727,11 +533,6 @@ struct ColorEditorWindowContent: View {
         ColorInfo.clampedRGB(value.rounded())
     }
 
-    /// 用简单加权阈值选择色块上的黑白文字；此值仅用于可读性判断。
-    private func readableTextColor(red: Double, green: Double, blue: Double) -> Color {
-        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
-        return luminance > 150 ? .black : .white
-    }
 }
 
 /// 调色方法的就地编辑器，临时草稿允许取消而不改动已保存文本。
@@ -765,7 +566,7 @@ struct ColorMethodEditor: View {
                         Button("取消") {
                             isEditing = false
                         }
-                        .liquidGlassButtonStyle()
+                        .workspaceButton()
 
                         Spacer()
 
@@ -773,10 +574,9 @@ struct ColorMethodEditor: View {
                             method = tempMethod
                             isEditing = false
                         }
-                        .liquidGlassProminentButtonStyle()
+                        .workspaceButton(prominent: true)
                         .accessibilityIdentifier("saveMethodButton")
                     }
-                    .glassActionGroup()
                 }
             } else {
                 Button {
@@ -787,7 +587,7 @@ struct ColorMethodEditor: View {
                         Image(systemName: "text.alignleft")
                             .foregroundStyle(AppPalette.onSurfaceVariant)
                         Text(method.isEmpty ? "添加调色方法" : method)
-                            .foregroundStyle(method.isEmpty ? AppPalette.onSurfaceVariant : AppPalette.deepInk)
+                            .foregroundStyle(method.isEmpty ? AppPalette.onSurfaceVariant : Color.primary)
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "pencil")
@@ -827,7 +627,7 @@ struct EditableListItemHeader: View {
                     }
 
                 Button("完成", action: save)
-                    .buttonStyle(.bordered)
+                    .workspaceButton()
                     .disabled(tempText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Button("取消") {
@@ -836,8 +636,8 @@ struct EditableListItemHeader: View {
                 .keyboardShortcut(.cancelAction)
             } else {
                 Text(text)
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
-                    .foregroundStyle(AppPalette.burntInk)
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(.primary)
                     .lineLimit(2)
                     .textSelection(.enabled)
             }
@@ -880,8 +680,8 @@ struct ContentView: View {
     @Binding private var library: RecipeLibrary
 
     @State private var isRenamingRecipe = false
-    // 持有原生窗口控制器，避免窗口显示期间被提前释放。
-    @State private var newRecipeWindowController: NewRecipeWindowController?
+    @State private var isCreatingProject = false
+    // 持有独立编辑器，允许切换项目时继续编辑原色。
     @State private var colorEditorWindowController: ColorEditorWindowController?
     @State private var savedRecipeWindowController: SavedMixingRecipeWindowController?
     /// 只保存选中项目 UUID；当前数组位置每次从库中重新解析。
@@ -897,11 +697,13 @@ struct ContentView: View {
     private let configuration: AIConfiguration
     private let generateRecipe: MixingGenerator
     private let generateBlend: BlendMixingGenerator
+    private let connectionBar: CodexConnectionBar?
 
     /// 接收共享库与生成能力；未显式注入时使用真实 Codex 服务。
     init(
         library: Binding<RecipeLibrary>,
         configuration: AIConfiguration = AIConfiguration(),
+        connectionBar: CodexConnectionBar? = nil,
         generateBlend: @escaping BlendMixingGenerator = { request, paintSet, configuration in
             try await CodexMixingService().generate(from: request, paintSet: paintSet, configuration: configuration)
         },
@@ -910,6 +712,7 @@ struct ContentView: View {
         }
     ) {
         _library = library
+        self.connectionBar = connectionBar
         self.configuration = configuration
         self.generateRecipe = generateRecipe
         self.generateBlend = generateBlend
@@ -925,9 +728,12 @@ struct ContentView: View {
     var body: some View {
         let generator: MixingGenerator = generateRecipe
         let blendGenerator: BlendMixingGenerator = generateBlend
-        return rootLayout
+        return workspaceWithToolbar
+            .frame(minWidth: 700, minHeight: 440)
             .navigationTitle("调色谱")
-            .toolbar { recipeToolbar }
+            .sheet(isPresented: $isCreatingProject) {
+                NewProjectSheet(onSave: addItem(named:))
+            }
             .sheet(item: $mixingRequest) { request in
                 AIMixingView(
                     projectName: library.item(id: request.projectID)?.text ?? request.projectName,
@@ -973,9 +779,26 @@ struct ContentView: View {
             }
     }
 
-    /// 工具栏按当前选择和可写状态开放考证、调色及项目管理入口。
+    @ViewBuilder
+    private var workspaceWithToolbar: some View {
+        if #available(macOS 26.0, *) {
+            rootLayout.toolbar {
+                colorTools
+                if selectedIndex != nil {
+                    ToolbarSpacer(.fixed, placement: .primaryAction)
+                }
+                projectTools
+            }
+        } else {
+            rootLayout.toolbar {
+                colorTools
+                projectTools
+            }
+        }
+    }
+
     @ToolbarContentBuilder
-    private var recipeToolbar: some ToolbarContent {
+    private var colorTools: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             if let selectedIndex {
                 Button {
@@ -999,26 +822,28 @@ struct ContentView: View {
                     Label("AI 调色", systemImage: "sparkles")
                 }
                 .labelStyle(.titleAndIcon)
-                .buttonStyle(.borderedProminent)
-                .tint(AppPalette.primary)
-                .help("输入本色 RGB 或选择颜色，调制本色后各取 20 滴，追加少量颜料制作自然且层次鲜明的阴影和高光")
+                .help("为当前项目生成本色、阴影色和高光色配方")
                 .accessibilityIdentifier("aiMixingButton")
                 .disabled(library.isReadOnly)
             }
         }
 
-        ToolbarItem(placement: .automatic) {
+    }
+
+    @ToolbarContentBuilder
+    private var projectTools: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
             Button {
-                showNewRecipeWindow()
+                isCreatingProject = true
             } label: {
-                Label("新建项目", systemImage: "square.and.pencil")
+                Label("新建项目", systemImage: "folder.badge.plus")
             }
             .help("新建项目")
             .accessibilityIdentifier("newRecipeButton")
             .disabled(library.isReadOnly)
         }
 
-        ToolbarItem(placement: .automatic) {
+        ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button {
                     isRenamingRecipe = true
@@ -1049,9 +874,9 @@ struct ContentView: View {
         if #available(macOS 13.0, *) {
             NavigationSplitView {
                 sidebar
-                    .navigationSplitViewColumnWidth(min: 230, ideal: AppPalette.sidebarWidth, max: 320)
+                    .navigationSplitViewColumnWidth(min: 192, ideal: AppPalette.sidebarWidth, max: 300)
             } detail: {
-                detail
+                workspaceDetail
             }
             .navigationSplitViewStyle(.balanced)
         } else {
@@ -1060,40 +885,36 @@ struct ContentView: View {
                     .frame(width: AppPalette.sidebarWidth)
                     .background(.ultraThinMaterial)
                 Divider()
-                detail
+                workspaceDetail
+            }
+        }
+    }
+
+    private var workspaceDetail: some View {
+        detail.workspaceBar(edge: .bottom) {
+            if let connectionBar {
+                connectionBar
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
     }
 
     /// 展示项目列表、数量和设置入口。
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("调色谱")
-                        .font(.system(size: 30, weight: .regular, design: .serif))
-                    Text("调色原料 · GOLDEN")
-                        .font(.caption)
-                        .foregroundStyle(AppPalette.onSurfaceVariant)
-                }
-
-                Spacer()
-
-                InkSeal(text: "色谱", size: 36)
-            }
-            .foregroundStyle(AppPalette.onSurface)
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-
-            HStack {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
                 Text("我的项目")
-                    .font(.caption.weight(.semibold))
+                    .font(.headline)
                 Spacer()
                 Text("\(items.count)")
-                    .font(.caption.monospacedDigit())
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("\(items.count) 个项目")
             }
-            .foregroundStyle(AppPalette.onSurfaceVariant)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
 
             List(selection: $selectedItemID) {
                 ForEach(items) { item in
@@ -1102,33 +923,28 @@ struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
-            .transparentListBackground()
 
+            Divider()
             AISettingsLink()
                 .buttonStyle(.borderless)
-                .padding(.horizontal, 20)
-
-            HStack(spacing: 6) {
-                Image(systemName: "paintbrush.pointed")
-                Text("参考色库 · 田宫 · 郡士")
-            }
-            .font(.caption)
-            .foregroundStyle(AppPalette.onSurfaceVariant)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
         }
     }
 
     /// 在侧栏紧凑显示项目名称、颜色数量和前几个颜色的叠层预览。
     private func sidebarRow(_ item: ListItem) -> some View {
         HStack(spacing: 12) {
-            colorStackPreview(item.colors)
-                .frame(width: 36, height: 36)
+            projectThumbnail(item.colors)
+                .frame(width: 32, height: 32)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.text)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.body.weight(.medium))
                     .lineLimit(1)
+                    .help(item.text)
                 Text("\(item.colors.count) 个颜色")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1148,28 +964,33 @@ struct ContentView: View {
 
             ScrollViewReader { scrollProxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        recipeHeader(item: selectedItem, title: titleBinding(for: selectedItem))
-                            .id("recipeHeader")
+                    VStack(spacing: 0) {
+                        if !selectedItem.colors.isEmpty {
+                            projectColorBanner(selectedItem.colors)
+                        }
+                        VStack(alignment: .leading, spacing: 24) {
+                            recipeHeader(item: selectedItem, title: titleBinding(for: selectedItem))
+                                .id("recipeHeader")
 
-                        if selectedItem.colors.isEmpty {
-                            emptyRecipeContent
-                        } else {
-                            LazyVGrid(
-                                columns: [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: 16)],
-                                alignment: .leading,
-                                spacing: 16
-                            ) {
-                                ForEach(selectedItem.colors) { color in
-                                    colorCard(color, itemID: selectedItem.id)
+                            if selectedItem.colors.isEmpty {
+                                emptyRecipeContent
+                            } else {
+                                LazyVGrid(
+                                    columns: [GridItem(.adaptive(minimum: 218), spacing: 16, alignment: .top)],
+                                    alignment: .leading,
+                                    spacing: 16
+                                ) {
+                                    ForEach(selectedItem.colors) { color in
+                                        colorCard(color, itemID: selectedItem.id)
+                                    }
                                 }
                             }
                         }
+                        .padding(24)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .background(canvasBackground)
+                .background(AppPalette.canvas)
                 .accessibilityIdentifier("recipeDetailScrollView")
                 .onChange(of: isRenamingRecipe) { isEditing in
                     if isEditing {
@@ -1179,135 +1000,48 @@ struct ContentView: View {
             }
             .id(selectedItem.id)
         } else {
-            ZStack {
-                canvasBackground
-                inkMountains
-                    .opacity(0.18)
-                    .allowsHitTesting(false)
-
-                VStack(spacing: 20) {
-                    emptyStateView(
-                        title: library.isReadOnly ? "项目暂时无法读取" : "先创建一个项目",
-                        symbol: "paintpalette",
-                        description: library.isReadOnly
-                            ? "原始数据已保留，请恢复数据后重新打开应用。"
-                            : "点击“新建项目”，进入项目后选择颜色或输入 RGB，再用 AI 生成三色配方。"
-                    )
-
-                    Button {
-                        showNewRecipeWindow()
-                    } label: {
-                        Label("新建项目", systemImage: "folder.badge.plus")
-                    }
-                    .liquidGlassProminentButtonStyle()
-                    .disabled(library.isReadOnly)
-                    .accessibilityIdentifier("emptyNewProjectButton")
+            VStack(spacing: 16) {
+                Image(systemName: library.isReadOnly ? "exclamationmark.triangle" : AppPalette.librarySymbol)
+                    .font(.system(size: 56, weight: .medium))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.teal, .orange, .indigo)
+                    .accessibilityHidden(true)
+                Text(library.isReadOnly ? "项目暂时无法读取" : "创建第一个调色项目")
+                    .font(.title.weight(.semibold))
+                Text(library.isReadOnly
+                     ? "原始数据已保留，请恢复数据后重新打开应用。"
+                     : "把同一模型或画作的色样和配方收在一个项目里。")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    isCreatingProject = true
+                } label: {
+                    Label("新建项目", systemImage: "plus")
                 }
-                .foregroundStyle(AppPalette.onSurface)
-                .padding(40)
+                .workspaceButton(prominent: true)
+                .controlSize(.large)
+                .disabled(library.isReadOnly)
+                .accessibilityIdentifier("emptyNewProjectButton")
             }
-        }
-    }
-
-    /// 在工作区底色上叠加不参与点击的纸张纹理。
-    private var canvasBackground: some View {
-        AppPalette.canvas
-            .overlay {
-                paperGrain
-                    .opacity(0.08)
-                    .allowsHitTesting(false)
-            }
-            .ignoresSafeArea()
-    }
-
-    /// 通过确定的点位生成轻微纸纹，避免每次刷新出现随机闪动。
-    private var paperGrain: some View {
-        Canvas { context, size in
-            for index in 0..<90 {
-                let x = size.width * CGFloat((index * 37) % 97) / 97
-                let y = size.height * CGFloat((index * 53) % 89) / 89
-                let rect = CGRect(x: x, y: y, width: 1.2, height: 1.2)
-                context.fill(Path(ellipseIn: rect), with: .color(AppPalette.lightInk.opacity(0.16)))
-            }
-        }
-    }
-
-    /// 使用随容器尺寸缩放的路径绘制空状态背景山形。
-    private var inkMountains: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            let height = proxy.size.height
-
-            ZStack(alignment: .bottom) {
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: height * 0.76))
-                    path.addCurve(
-                        to: CGPoint(x: width * 0.38, y: height * 0.66),
-                        control1: CGPoint(x: width * 0.12, y: height * 0.70),
-                        control2: CGPoint(x: width * 0.24, y: height * 0.58)
-                    )
-                    path.addCurve(
-                        to: CGPoint(x: width, y: height * 0.70),
-                        control1: CGPoint(x: width * 0.58, y: height * 0.78),
-                        control2: CGPoint(x: width * 0.76, y: height * 0.62)
-                    )
-                    path.addLine(to: CGPoint(x: width, y: height))
-                    path.addLine(to: CGPoint(x: 0, y: height))
-                    path.closeSubpath()
-                }
-                .fill(AppPalette.clearInk.opacity(0.22))
-                .blur(radius: 16)
-
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: height * 0.86))
-                    path.addCurve(
-                        to: CGPoint(x: width * 0.46, y: height * 0.74),
-                        control1: CGPoint(x: width * 0.15, y: height * 0.78),
-                        control2: CGPoint(x: width * 0.30, y: height * 0.72)
-                    )
-                    path.addCurve(
-                        to: CGPoint(x: width, y: height * 0.82),
-                        control1: CGPoint(x: width * 0.62, y: height * 0.76),
-                        control2: CGPoint(x: width * 0.78, y: height * 0.90)
-                    )
-                    path.addLine(to: CGPoint(x: width, y: height))
-                    path.addLine(to: CGPoint(x: 0, y: height))
-                    path.closeSubpath()
-                }
-                .fill(AppPalette.deepInk.opacity(0.18))
-                .blur(radius: 10)
-            }
+            .padding(32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppPalette.canvas)
         }
     }
 
     /// 组合可编辑项目名、颜色总数和整组色条。
     private func recipeHeader(item: ListItem, title: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline, spacing: 16) {
-                EditableListItemHeader(
-                    text: title,
-                    isEditing: $isRenamingRecipe
-                )
-
-                Text("\(item.colors.count) 色")
-                    .font(.callout.monospacedDigit())
-                    .foregroundStyle(AppPalette.onSurfaceVariant)
-                    .fixedSize()
-            }
-
-            colorStrip(item.colors)
-                .frame(height: 12)
-
+            EditableListItemHeader(text: title, isEditing: $isRenamingRecipe)
             if !item.colors.isEmpty {
-                HStack {
-                    Text("项目颜色")
-                        .font(.headline)
-                        .foregroundStyle(AppPalette.onSurface)
-                    Spacer()
-                    Text("点按色卡编辑")
-                        .font(.caption)
-                        .foregroundStyle(AppPalette.onSurfaceVariant)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("项目颜色").font(.headline)
+                    Text("\(item.colors.count) 色")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
+                .padding(.top, 4)
             }
         }
     }
@@ -1316,55 +1050,53 @@ struct ContentView: View {
     private var emptyRecipeContent: some View {
         VStack(spacing: 16) {
             Image(systemName: "paintpalette")
-                .font(.system(size: 34, weight: .regular))
-                .foregroundStyle(AppPalette.onSurfaceVariant)
+                .font(.system(size: 38, weight: .light))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Text("留白待色")
-                .font(.system(size: 24, weight: .regular, design: .serif))
-                .foregroundStyle(AppPalette.onSurface)
+                .font(.title2.weight(.semibold))
 
-            Text("选择颜色或输入 RGB，为这个项目生成本色、阴影色和高光色。")
+            Text("从一个目标色开始，生成本色、阴影色和高光色配方。")
                 .font(.callout)
-                .foregroundStyle(AppPalette.onSurfaceVariant)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
 
             Button {
                 showAIMixing()
             } label: {
                 Label("AI 调色", systemImage: "sparkles")
             }
-            .liquidGlassProminentButtonStyle()
+            .workspaceButton(prominent: true)
             .accessibilityIdentifier("emptyProjectAIMixingButton")
             .disabled(library.isReadOnly)
         }
-        .frame(maxWidth: .infinity, minHeight: 260)
-        .contentSurface(cornerRadius: 20)
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: 270)
+        .background(AppPalette.cardSurface, in: RoundedRectangle(cornerRadius: 14))
     }
 
     /// 单色卡片聚合颜色编辑、配方查看、重新调色、删除和方法说明入口。
     private func colorCard(_ color: ColorInfo, itemID: UUID) -> some View {
         let displayName = color.name.isEmpty ? (color.paintName ?? "未命名颜色") : color.name
 
-        return VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 0) {
             Button {
                 showColorEditor(
                     mode: .edit(listItemID: itemID, colorID: color.id),
                     initialColor: color
                 )
             } label: {
-                VStack(alignment: .leading, spacing: 16) {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color(red: color.red / 255, green: color.green / 255, blue: color.blue / 255))
-                        .frame(height: 156)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(.black.opacity(0.08), lineWidth: 1)
-                        }
-
-                    VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Rectangle()
+                        .fill(Color(.sRGB, red: color.red / 255, green: color.green / 255, blue: color.blue / 255))
+                        .frame(height: 100)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 6) {
                         HStack(alignment: .top, spacing: 8) {
                             Text(displayName)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(AppPalette.onSurface)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
                                 .lineLimit(2)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -1399,9 +1131,10 @@ struct ContentView: View {
                         .foregroundStyle(AppPalette.onSurfaceVariant)
 
                         Text("RGB  \(Int(color.red)) · \(Int(color.green)) · \(Int(color.blue))")
-                            .font(.caption.monospacedDigit())
+                            .font(.caption.monospaced())
                             .foregroundStyle(AppPalette.onSurfaceVariant)
                     }
+                    .padding(12)
                 }
                 .contentShape(Rectangle())
             }
@@ -1411,104 +1144,87 @@ struct ContentView: View {
             .accessibilityValue("RGB \(Int(color.red)), \(Int(color.green)), \(Int(color.blue))")
 
             Divider()
-
-            if let recipe = color.mixingRecipe {
-                SavedMixingRecipeButton(recipe: recipe) {
-                    showSavedMixingRecipe(recipe, itemID: itemID, colorID: color.id)
+            VStack(alignment: .leading, spacing: 8) {
+                if let recipe = color.mixingRecipe {
+                    SavedMixingRecipeButton(recipe: recipe) {
+                        showSavedMixingRecipe(recipe, itemID: itemID, colorID: color.id)
+                    }
                 }
+
+                HStack {
+                    Button {
+                        showAIMixing(color: color)
+                    } label: {
+                        Label("用此颜色 AI 调色", systemImage: "sparkles")
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Button(role: .destructive) {
+                        library.removeColor(itemID: itemID, colorID: color.id)
+                    } label: {
+                        Label("删除颜色", systemImage: "trash")
+                            .labelStyle(.iconOnly)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .help("删除颜色：\(displayName)")
+                    .accessibilityLabel("删除颜色：\(displayName)")
+                    .accessibilityIdentifier("deleteColorButton-\(color.id)")
+                }
+                .buttonStyle(.borderless)
+                .disabled(library.isReadOnly)
+
+                ColorMethodEditor(method: methodBinding(for: color, itemID: itemID))
             }
-
-            HStack {
-                Button {
-                    showAIMixing(color: color)
-                } label: {
-                    Label("用此颜色 AI 调色", systemImage: "sparkles")
-                }
-
-                Spacer(minLength: 8)
-
-                Button(role: .destructive) {
-                    library.removeColor(itemID: itemID, colorID: color.id)
-                } label: {
-                    Label("删除颜色", systemImage: "trash")
-                        .labelStyle(.iconOnly)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-                .help("删除颜色：\(displayName)")
-                .accessibilityLabel("删除颜色：\(displayName)")
-                .accessibilityIdentifier("deleteColorButton-\(color.id)")
-            }
-            .buttonStyle(.borderless)
-            .disabled(library.isReadOnly)
-
-            ColorMethodEditor(method: methodBinding(for: color, itemID: itemID))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
         }
-        .padding(16)
-        .contentSurface(cornerRadius: 22, elevated: true)
-    }
-
-    /// 最多叠放四个色块作为侧栏缩略图，无颜色时使用画板图标。
-    private func colorStackPreview(_ colors: [ColorInfo]) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(AppPalette.surfaceContainerHigh)
-
-            ForEach(Array(colors.prefix(4).enumerated()), id: \.offset) { index, color in
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(Color(red: color.red / 255, green: color.green / 255, blue: color.blue / 255))
-                    .frame(width: 20, height: 20)
-                    .offset(x: CGFloat(index) * 4 - 6, y: CGFloat(index) * 3 - 5)
-                    .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 1)
-            }
-
-            if colors.isEmpty {
-                Image(systemName: "paintpalette")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
+        .background(AppPalette.cardSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(AppPalette.outlineVariant)
+                .allowsHitTesting(false)
         }
     }
 
-    /// 等分项目色条；空项目放置一个中性色避免除零。
-    private func colorStrip(_ colors: [ColorInfo]) -> some View {
-        GeometryReader { proxy in
-            let visibleColors = colors.isEmpty ? [ColorInfo(red: 235, green: 232, blue: 222)] : colors
-            let width = proxy.size.width / CGFloat(visibleColors.count)
-
-            HStack(spacing: 0) {
-                ForEach(Array(visibleColors.enumerated()), id: \.offset) { _, color in
-                    Rectangle()
-                        .fill(Color(red: color.red / 255, green: color.green / 255, blue: color.blue / 255))
-                        .frame(width: width)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(.black.opacity(0.08), lineWidth: 1)
-            )
-        }
-    }
-
-    /// 按系统版本选择原生空状态组件或等效的文字图标布局。
+    /// 预览项目最前面的三种颜色，空项目显示系统文件夹。
     @ViewBuilder
-    private func emptyStateView(title: String, symbol: String, description: String) -> some View {
-        if #available(macOS 14.0, *) {
-            ContentUnavailableView(title, systemImage: symbol, description: Text(description))
+    private func projectThumbnail(_ colors: [ColorInfo]) -> some View {
+        if colors.isEmpty {
+            Image(systemName: "folder")
+                .font(.title3)
         } else {
-            VStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.system(size: 28))
-                    .foregroundStyle(.secondary)
-                Text(title)
-                    .font(.headline)
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            colorStrip(colors.prefix(3))
         }
+    }
+
+    @ViewBuilder
+    private func projectColorBanner(_ colors: [ColorInfo]) -> some View {
+        let band = colorBands(colors).frame(height: 60).accessibilityHidden(true)
+        if #available(macOS 26.0, *) {
+            band.backgroundExtensionEffect()
+        } else {
+            band
+        }
+    }
+
+    private func colorBands(_ colors: some RandomAccessCollection<ColorInfo>) -> some View {
+        HStack(spacing: 0) {
+            ForEach(colors) { color in
+                Color(.sRGB, red: color.red / 255, green: color.green / 255, blue: color.blue / 255)
+            }
+        }
+    }
+
+    private func colorStrip(_ colors: some RandomAccessCollection<ColorInfo>) -> some View {
+        colorBands(colors)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(AppPalette.outlineVariant)
+            }
     }
 
     // MARK: - 库操作与稳定身份绑定
@@ -1558,31 +1274,8 @@ struct ContentView: View {
 
     /// 主界面离开或打开新流程时统一关闭附属编辑窗口。
     private func closeEditors() {
-        newRecipeWindowController?.close()
         colorEditorWindowController?.close()
         savedRecipeWindowController?.close()
-    }
-
-    /// 已有新建窗口则置前，否则创建并在关闭时释放控制器。
-    private func showNewRecipeWindow() {
-        if let window = newRecipeWindowController?.window {
-            NSApp.activate(ignoringOtherApps: true)
-            window.makeKeyAndOrderFront(nil)
-            return
-        }
-
-        let controller = NewRecipeWindowController(
-            onSave: { text in
-                addItem(named: text)
-            },
-            onClose: {
-                newRecipeWindowController = nil
-            }
-        )
-        newRecipeWindowController = controller
-        controller.showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        controller.window?.makeKeyAndOrderFront(nil)
     }
 
     /// 删除选中项目前关闭其颜色编辑器，成功后重新选取有效项目。
@@ -1682,118 +1375,51 @@ struct ContentView: View {
 }
 
 // MARK: - 共享样式与系统版本兼容
-private extension View {
-    /// 为内容卡片统一添加背景、细描边和可选的轻阴影。
-    func contentSurface(cornerRadius: CGFloat, elevated: Bool = false) -> some View {
-        self
-            .background(AppPalette.cardSurface, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(AppPalette.outlineVariant.opacity(0.55), lineWidth: 1)
-                    .allowsHitTesting(false)
-            }
-            .shadow(color: elevated ? AppPalette.shadow.opacity(0.35) : .clear, radius: 8, x: 0, y: 3)
-    }
-
-    /// 在支持 Liquid Glass 的系统上将相邻玻璃控件放入统一容器。
+extension View {
+    /// 操作层使用系统材质，旧版 macOS 沿用相同层级的原生按钮。
     @ViewBuilder
-    func glassActionGroup() -> some View {
+    func workspaceButton(prominent: Bool = false) -> some View {
         if #available(macOS 26.0, *) {
-            GlassEffectContainer(spacing: 12) {
-                self
-            }
+            if prominent { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+        } else if prominent {
+            buttonStyle(.borderedProminent)
         } else {
-            self
+            buttonStyle(.bordered)
         }
     }
 
-    /// 支持时隐藏系统列表背景，让侧栏使用应用背景。
-    @ViewBuilder
-    func transparentListBackground() -> some View {
-        if #available(macOS 13.0, *) {
-            self.scrollContentBackground(.hidden)
-        } else {
-            self
-        }
+    /// 下拉列表交由系统菜单呈现，收起的选择器与工作区按钮使用同一套材质。
+    func workspaceMenuPicker() -> some View {
+        pickerStyle(.menu)
+            .workspaceButton()
     }
 
-    /// 新系统采用玻璃材质，旧系统回退为普通材质、描边和阴影。
     @ViewBuilder
-    func floatingLiquidGlassPanel(cornerRadius: CGFloat) -> some View {
+    func workspaceGlassGroup() -> some View {
         if #available(macOS 26.0, *) {
-            self
-                .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+            GlassEffectContainer(spacing: 4) { self }
         } else {
             self
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(AppPalette.outlineVariant, lineWidth: 1)
-                        .allowsHitTesting(false)
-                }
-                .shadow(color: AppPalette.shadow, radius: 18, x: 0, y: 10)
         }
     }
 
-    /// 浮动面板采用固定尺寸的自绘按钮，突出主要操作。
-    func floatingPanelButtonStyle(prominent: Bool = false) -> some View {
-        self
-            .buttonStyle(.plain)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(prominent ? AppPalette.onPrimary : AppPalette.onSurface)
-            .padding(.horizontal, 14)
-            .frame(height: 34)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(prominent ? AppPalette.primary : AppPalette.surfaceContainerHigh)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(AppPalette.outlineVariant, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    /// 主操作按钮按系统能力选择玻璃或边框强调样式。
+    /// 为组合控件提供单层材质，内部按钮保留独立焦点。
     @ViewBuilder
-    func liquidGlassProminentButtonStyle() -> some View {
-        if #available(macOS 26.0, iOS 26.0, *) {
-            self
-                .buttonStyle(.glassProminent)
-                .controlSize(.regular)
-                .tint(AppPalette.primary)
-        } else if #available(macOS 14.0, *) {
-            self
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.roundedRectangle(radius: 8))
-                .controlSize(.regular)
-                .tint(AppPalette.primary)
+    func workspaceControlCapsule() -> some View {
+        if #available(macOS 26.0, *) {
+            glassEffect(.regular, in: Capsule())
         } else {
-            self
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .tint(AppPalette.primary)
+            background(.regularMaterial, in: Capsule())
+                .overlay { Capsule().strokeBorder(AppPalette.outlineVariant) }
         }
     }
 
-    /// 次要操作按钮按系统能力选择玻璃或普通边框样式。
     @ViewBuilder
-    func liquidGlassButtonStyle() -> some View {
-        if #available(macOS 26.0, iOS 26.0, *) {
-            self
-                .buttonStyle(.glass)
-                .controlSize(.regular)
-        } else if #available(macOS 14.0, *) {
-            self
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.roundedRectangle(radius: 8))
-                .controlSize(.regular)
-                .tint(AppPalette.secondary)
+    func workspaceBar<Bar: View>(edge: VerticalEdge, @ViewBuilder content: () -> Bar) -> some View {
+        if #available(macOS 26.0, *) {
+            safeAreaBar(edge: edge, spacing: 0, content: content)
         } else {
-            self
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .tint(AppPalette.secondary)
+            safeAreaInset(edge: edge, spacing: 0, content: content)
         }
     }
 }
@@ -1811,7 +1437,7 @@ private struct RecipePreview: View {
 
     /// 复用真实主界面布局检查预览数据的展示。
     var body: some View {
-        ContentView(library: $library)
+        ContentView(library: $library, connectionBar: CodexConnectionBar(phase: .skipped, performAction: {}))
     }
 }
 
@@ -1855,13 +1481,12 @@ private enum RecipePreviewData {
 }
 
 #Preview("新建项目") {
-    NewRecipeWindowContent(onSave: { _ in }, onCancel: { })
-        .padding(32)
+    NewProjectSheet(onSave: { _ in })
         .background(AppPalette.canvas)
         .preferredColorScheme(.light)
 }
 
-#Preview("添加颜色 · 毛玻璃") {
+#Preview("添加颜色") {
     ColorEditorWindowContent(
         mode: .add(listItemID: UUID()),
         initialColor: RecipePreviewData.colors.first ?? ColorInfo(red: 255, green: 255, blue: 255),

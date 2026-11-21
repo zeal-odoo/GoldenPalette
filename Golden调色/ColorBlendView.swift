@@ -96,7 +96,7 @@ struct ColorBlendEditor: View {
     /// 始终保留至少两组输入，新行沿用上一行的模式和系列。
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("每组可输入 RGB 或选择品牌标准色，再填写占比，由 AI 合成一个本色目标。")
+            Text("为每组颜色填写占比，AI 会按比例合成目标本色。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -118,6 +118,7 @@ struct ColorBlendEditor: View {
             } label: {
                 Label("添加一组颜色", systemImage: "plus")
             }
+            .workspaceButton()
             .accessibilityIdentifier("addBlendSourceButton")
 
             if let request = ColorBlendEntry.request(from: entries) {
@@ -126,9 +127,9 @@ struct ColorBlendEditor: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             } else {
-                Text("至少两组颜色；每组须输入 0～255 的整数 RGB 或选择品牌标准色，占比大于 0 且不超过 100%。")
+                Text("至少需要两组颜色。每组选择一个标准色或填写有效 RGB，且占比须大于 0、不超过 100%。")
                     .font(.caption)
-                    .foregroundStyle(AppPalette.primary)
+                    .foregroundStyle(.red)
                     .accessibilityIdentifier("blendInputError")
             }
         }
@@ -187,7 +188,7 @@ private struct ColorBlendInputRow: View {
                     Text(mode.title).tag(mode)
                 }
             }
-            .pickerStyle(.menu)
+            .workspaceMenuPicker()
             .accessibilityIdentifier("blendInputMode-\(index)")
 
             if entry.inputMode == .reference {
@@ -212,7 +213,12 @@ private struct ColorBlendInputRow: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 12).fill(AppPalette.cardSurface))
+        .background(AppPalette.cardSurface, in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(AppPalette.outlineVariant)
+                .allowsHitTesting(false)
+        }
     }
 
     /// 生成带行号标识的通道输入框，便于辅助功能和自动化定位。
@@ -274,7 +280,7 @@ private struct ColorBlendReferenceInput: View {
                     Text("\(paint.code) · \(paint.chineseName)").tag(Optional(paint.code))
                 }
             }
-            .pickerStyle(.menu)
+            .workspaceMenuPicker()
             .accessibilityIdentifier("blendPaintCodePicker-\(index)")
 
             if matchingPaints.isEmpty {

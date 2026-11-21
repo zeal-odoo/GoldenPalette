@@ -4,13 +4,13 @@
 
 用于记录项目颜色和生成模型、美术颜料调色配方的 macOS 应用。
 
-**最新版本：1.0.19（构建 20）** · [发布说明与下载](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [下载 Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.19/GoldenPalette-1.0.19-universal.dmg)
+**最新版本：1.0.22（构建 23）** · [发布说明与下载](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [下载 Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.22/GoldenPalette-1.0.22-universal.dmg)
 
 - 输入 RGB 或选择颜色，通过本机 Codex CLI 生成本色、阴影色、高光色配方。
 - 在“AI 调色 → 调色原料”中选择 GOLDEN SoFlat 12 色或 Fluid Acrylics 15 色。两套原料分别使用，AI 只使用所选套装。本色调制 200 滴；阴影和高光各取 20 滴已调本色，再按配方追加少量颜料，列出色号、追加滴数、最终总量和步骤。
 - 可以把田宫或郡士的具体色号作为参考标准，由 AI 用这些 GOLDEN 原料配出接近该标准的本色、阴影色、高光色。
 - 支持多个 RGB、品牌标准色或两者混合按比例交给 AI 合成目标色，例如郡士 H1 30% + H2 70%；比例总和不足或超过 100% 时按相对权重处理。
-- 按项目保存颜色和配方，支持单独删除颜色；查看配方和编辑颜色窗口采用毛玻璃背景。
+- 按项目保存颜色和配方，支持单独删除颜色。项目色带汇总所有色样。点按色卡可编辑颜色，已保存的配方可在独立窗口查看用量和步骤。
 - 在应用内的系统设置中配置模型、推理强度和 Codex CLI 路径。
 - 启动时检查 Codex CLI 与当前模型，遇到问题可查看原因、修改配置或重试。
 - 根据模型信息查找说明书，或导入 PDF；结合联网资料考证配色，标注零件颜色并导出带标记的 PDF。
@@ -24,7 +24,7 @@
 发布页同时提供 SHA-256 校验文件和中英文安装说明。把 DMG 和 `.sha256` 文件下载到同一目录后，可在该目录执行：
 
 ```sh
-shasum -a 256 -c GoldenPalette-1.0.19-universal.sha256
+shasum -a 256 -c GoldenPalette-1.0.22-universal.sha256
 ```
 
 应用界面目前主要使用简体中文；本仓库提供中英文使用说明。

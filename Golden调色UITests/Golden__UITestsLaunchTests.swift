@@ -25,7 +25,8 @@ final class Golden__UITestsLaunchTests: XCTestCase {
     func testLaunch() throws {
         let app = XCUIApplication()
         // 启动烟雾测试复用检查替身，不在每次采集画面时发起真实模型请求。
-        app.launchArguments = ["--ui-testing"]
+        // 每次从独立的工作窗口开始，避免恢复上次测试留下的窗口。
+        app.launchArguments = ["--ui-testing", "-ApplePersistenceIgnoreState", "YES"]
         app.launch()
 
         // Insert steps here to perform after app launch but before taking a screenshot,

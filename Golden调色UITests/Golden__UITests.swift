@@ -450,6 +450,7 @@ final class Golden__UITests: XCTestCase {
         app.buttons["closeSavedMixingRecipeButton"].click()
         waitUntilGone(savedReference)
 
+        app.activate()
         app.buttons["aiMixingButton"].firstMatch.click()
         let selected = app.staticTexts["selectedReferencePaint"]
         XCTAssertTrue(selected.waitForExistence(timeout: 5))
@@ -918,7 +919,8 @@ final class Golden__UITests: XCTestCase {
     private func launchApp(mixingResponse: String? = nil, blendResponse: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         // Use an in-memory library so UI automation cannot modify real recipes.
-        app.launchArguments = ["--ui-testing"]
+        // 每次从独立的工作窗口开始，避免恢复上次测试留下的窗口。
+        app.launchArguments = ["--ui-testing", "-ApplePersistenceIgnoreState", "YES"]
         if let mixingResponse {
             app.launchEnvironment["GOLDEN_UI_MIXING_RESPONSE"] = mixingResponse
         }
@@ -932,6 +934,7 @@ final class Golden__UITests: XCTestCase {
             app.typeKey("n", modifierFlags: [.command])
         }
         XCTAssertTrue(app.buttons["newRecipeButton"].firstMatch.waitForExistence(timeout: 5), app.windows.debugDescription)
+        app.activate()
         return app
     }
 

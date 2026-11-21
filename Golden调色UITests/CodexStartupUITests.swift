@@ -56,10 +56,15 @@ final class CodexStartupUITests: XCTestCase {
     /// 用启动参数注入检查结果，并隔离实际颜色库和 AI 偏好。
     private func launch(behavior: String) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing"]
+        // 每次从独立的工作窗口开始，避免恢复上次测试留下的窗口。
+        app.launchArguments = ["--ui-testing", "-ApplePersistenceIgnoreState", "YES"]
         app.launchEnvironment["GOLDEN_UI_STARTUP_CHECK"] = behavior
         app.launch()
         app.activate()
+        // macOS 可恢复为无窗口状态，通过系统的新建窗口命令进入启动流程。
+        if !app.windows.firstMatch.waitForExistence(timeout: 3) {
+            app.typeKey("n", modifierFlags: .command)
+        }
         return app
     }
 }

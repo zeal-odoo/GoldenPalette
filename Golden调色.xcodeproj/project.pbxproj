@@ -64,7 +64,7 @@
 
 /* Begin PBXFileReference section */
 		9F1A70E630A62F82002C21C9 /* TamiyaPaintAdditions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TamiyaPaintAdditions.swift; sourceTree = "<group>"; };
-		9F1A70E830A729CD002C21C9 /* ToneAdditionTests.swift */ = {isa = PBXFileReference; path = ToneAdditionTests.swift; sourceTree = "<group>"; };
+		9F1A70E830A729CD002C21C9 /* ToneAdditionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToneAdditionTests.swift; sourceTree = "<group>"; };
 		9F3B8E0D3078BDF7001FD75B /* PaintSwatchData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintSwatchData.swift; sourceTree = "<group>"; };
 		9F44FA323072702F0029812C /* RecipeLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeLibrary.swift; sourceTree = "<group>"; };
 		9F44FA34307280A70029812C /* MixingRecipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MixingRecipe.swift; sourceTree = "<group>"; };
@@ -542,7 +542,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 23;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -555,7 +555,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.19;
+				MARKETING_VERSION = 1.0.22;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -571,7 +571,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Golden调色/Golden__.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 23;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Golden调色/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
@@ -584,7 +584,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.19;
+				MARKETING_VERSION = 1.0.22;
 				PRODUCT_BUNDLE_IDENTIFIER = "Goden.Golden--";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

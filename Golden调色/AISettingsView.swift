@@ -8,67 +8,64 @@ struct AISettingsView: View {
 
     /// 编辑模型、推理强度和 CLI 路径，并即时展示本地配置校验结果。
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("AI 配置", systemImage: "sparkles")
-                    .font(.title2.weight(.semibold))
-                Text("所有项目共用，修改后自动保存，下次生成时生效。")
-                    .foregroundStyle(.secondary)
+        Group {
+            if #available(macOS 13.0, *) {
+                settingsForm.formStyle(.grouped)
+            } else {
+                ScrollView { settingsForm.padding(24) }
             }
+        }
+        .frame(width: 520, height: 432)
+        .navigationTitle("AI 配置")
+    }
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text("模型 ID").font(.headline)
-                TextField("输入 Codex 可用的模型 ID", text: $configuration.model.modelID)
-                    .textFieldStyle(.roundedBorder)
+    private var settingsForm: some View {
+        Form {
+            Section {
+                TextField("模型 ID", text: $configuration.model.modelID)
                     .accessibilityIdentifier("aiModelField")
-                Text("可自由输入模型名称，使用当前 Codex 账户可访问的模型。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 if !configuration.isValid {
                     Text("模型 ID 不能为空。")
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.red)
                 }
-
                 Picker("推理强度", selection: $configuration.model.reasoningEffort) {
                     ForEach(AIReasoningEffort.allCases) { effort in
                         Text(effort.title).tag(effort)
                     }
                 }
+                .workspaceMenuPicker()
                 .accessibilityIdentifier("aiReasoningPicker")
-                Text("支持的强度取决于模型；不确定时可选“模型默认”。\n\(configuration.model.reasoningEffort.generationWaitDescription)")
-                    .font(.caption)
+                Text(configuration.model.reasoningEffort.generationWaitDescription)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
-
                 Button("恢复默认模型和强度") {
                     configuration.model = AIModelSelection()
                 }
                 .accessibilityIdentifier("resetAIModelButton")
+            } header: {
+                Text("生成参数")
+            } footer: {
+                Text("设置适用于所有项目，修改后自动保存。")
             }
 
-            Divider()
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Codex CLI").font(.headline)
+            Section {
                 HStack {
-                    TextField("自动查找，或填写完整路径", text: $configuration.executablePath)
-                        .textFieldStyle(.roundedBorder)
+                    TextField("可执行文件", text: $configuration.executablePath, prompt: Text("自动查找或输入完整路径"))
                         .accessibilityIdentifier("codexPathField")
                     Button("选择…", action: chooseExecutable)
+                        .workspaceButton()
                 }
                 Text(CodexMixingService.executableURL(customPath: configuration.executablePath)?.path ?? "尚未找到 Codex CLI")
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
-                Text("使用 Codex CLI 的登录账户。首次使用请先在终端执行 codex login。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            } header: {
+                Text("Codex CLI")
+            } footer: {
+                Text("首次使用时，在终端运行 codex login 登录。")
             }
         }
-        .padding(24)
-        .frame(width: 520)
-        .navigationTitle("系统设置")
     }
 
     /// 选择单个 CLI 可执行文件，只保存路径，不在设置界面启动进程。

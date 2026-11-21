@@ -24,7 +24,7 @@ final class SavedMixingRecipeWindowController: NSWindowController, NSWindowDeleg
         self.recipe = recipe
         let panel = DraggableGlassPanel(
             contentRect: NSRect(origin: .zero, size: SavedMixingRecipeWindowContent.contentSize),
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -55,6 +55,7 @@ final class SavedMixingRecipeWindowController: NSWindowController, NSWindowDeleg
         hostingView.wantsLayer = true
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         panel.contentView = hostingView
+        panel.contentMinSize = NSSize(width: 420, height: 360)
         panel.setContentSize(SavedMixingRecipeWindowContent.contentSize)
         panel.center()
     }
@@ -81,7 +82,13 @@ struct SavedMixingRecipeWindowContent: View {
 
     /// 顶部提供复制与关闭，正文独立滚动以容纳长步骤。
     var body: some View {
-        VStack(spacing: 0) {
+        ScrollView {
+            MixingRecipeDetails(recipe: recipe)
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityIdentifier("savedMixingRecipeScrollView")
+        .workspaceBar(edge: .top) {
             HStack {
                 Text("\(recipe.role.title) · \(recipe.preparedTotalDrops) 滴配方").font(.headline)
                 Spacer()
@@ -89,23 +96,18 @@ struct SavedMixingRecipeWindowContent: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(recipe.formattedText, forType: .string)
                 }
+                .workspaceButton()
                 .accessibilityIdentifier("copySavedMixingRecipeButton")
                 Button("关闭", action: onClose)
+                    .workspaceButton()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("closeSavedMixingRecipeButton")
             }
-            .padding(20)
-
-            Divider()
-
-            ScrollView {
-                MixingRecipeDetails(recipe: recipe)
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .accessibilityIdentifier("savedMixingRecipeScrollView")
+            .workspaceGlassGroup()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
         }
-        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
-        .background(FrostedWindowBackground())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppPalette.cardSurface)
     }
 }
