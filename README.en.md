@@ -4,7 +4,7 @@
 
 A macOS app for organizing project colors and generating paint-mixing recipes for scale models and art projects.
 
-**Latest version: 1.0.22 (build 23)** · [Release notes and downloads](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [Download Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.22/GoldenPalette-1.0.22-universal.dmg)
+**Latest version: 1.0.24 (build 25)** · [Release notes and downloads](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [Download Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.24/GoldenPalette-1.0.24-universal.dmg)
 
 ## Features
 
@@ -28,7 +28,7 @@ Requires **macOS 12.7 or later**. The Universal DMG supports **Apple silicon and
 Replacing the application preserves existing projects, recipes, manual studies, and AI settings. Release assets include a SHA-256 checksum and bilingual installation notes. Download the DMG and checksum into the same folder, then verify them from that folder:
 
 ```sh
-shasum -a 256 -c GoldenPalette-1.0.22-universal.sha256
+shasum -a 256 -c GoldenPalette-1.0.24-universal.sha256
 ```
 
 AI features require **Codex CLI to be installed and signed in on this Mac**. In the app, open `系统设置 → AI 配置` (Settings → AI Configuration), choose a model available to your account, and set the CLI path if necessary. The installer does not include Codex CLI or login credentials. The startup check sends a short request to the configured model.

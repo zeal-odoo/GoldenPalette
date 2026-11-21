@@ -7,6 +7,8 @@ import AppKit
 @MainActor
 struct AIMixingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     // MARK: - 输入草稿与生成状态
     @State private var redText: String
     @State private var greenText: String
@@ -115,7 +117,11 @@ struct AIMixingView: View {
     /// 固定头部、错误区和保存区，中间输入与结果各自滚动。
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 12) {
+                Image(systemName: "paintpalette.fill")
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("AI 调色 · \(projectName)")
                         .font(.title2.weight(.semibold))
@@ -163,72 +169,22 @@ struct AIMixingView: View {
             HSplitView {
                 ScrollView {
                     inputPanel
-                        .padding(20)
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background { inspectorSurface }
+                .padding(10)
                 .accessibilityIdentifier("mixingInputScrollView")
-                .frame(minWidth: 260, idealWidth: 296, maxWidth: 360)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        if let result {
-                            MixingPaletteDetails(palette: result)
-                        } else if isGenerating {
-                            VStack(alignment: .leading, spacing: 16) {
-                                ProgressView()
-                                Text(inputMode == .blend ? "AI 正在合成目标色并计算三色配方…" : "正在计算本色、阴影色和高光色…")
-                                    .font(.headline)
-                                Text((activeModel ?? configuration.model).reasoningEffort.generationWaitDescription)
-                                    .accessibilityIdentifier("mixingWaitDescription")
-                                    .foregroundStyle(.secondary)
-                                Button("取消生成", action: cancelGeneration)
-                                    .workspaceButton()
-                                    .accessibilityIdentifier("cancelMixingButton")
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 40)
-                        } else {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("可用颜料").font(.title2.weight(.semibold))
-                                Text("先调 200 滴本色，再各取 20 滴调制阴影与高光。")
-                                    .foregroundStyle(.secondary)
-                            }
-                            LazyVStack(alignment: .leading, spacing: 12) {
-                                ForEach(paintSet.series) { series in
-                                    HStack(spacing: 0) {
-                                        ForEach(series.paints) { paint in
-                                            Color(.sRGB, red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255)
-                                        }
-                                    }
-                                    .frame(height: 34)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    .accessibilityHidden(true)
-                                    Text("\(series.title) · \(series.paints.count) 色")
-                                        .font(.headline)
-                                        .padding(.top, 4)
-                                    Text(series.previewNote)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .accessibilityIdentifier("paintPreviewNote-\(series.rawValue)")
-                                    ForEach(series.paints) { paint in
-                                        PaintDoseRow(paint: paint, drops: nil)
-                                            .accessibilityIdentifier("availablePaint-\(paint.code)")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .background(AppPalette.cardSurface)
-                .accessibilityIdentifier("mixingResultsScrollView")
-                // New requests and their results start at the top, so progress is always visible.
-                .id(requestID)
+                .frame(minWidth: 304, idealWidth: 350, maxWidth: 404)
+                resultPanel
             }
+
+            Divider()
+            resultActions
         }
-        .workspaceBar(edge: .bottom) { resultActions }
         .frame(minWidth: 740, idealWidth: 900, minHeight: 500, idealHeight: 680)
-        .background(AppPalette.canvas)
+        .background { sheetBackdrop }
         // 任一输入或套装变更都使旧配方失效；处理系统取色器仍可能异步返回的修改。
         .onChange(of: redText) { _ in clearResult() }
         .onChange(of: greenText) { _ in clearResult() }
@@ -243,6 +199,125 @@ struct AIMixingView: View {
         }
         .onChange(of: selectedPaintCode) { _ in clearResult() }
         .onDisappear(perform: cancelGeneration)
+    }
+
+    /// macOS 表单窗口自带实色底板，让玻璃在窗口内采样当前套装的色光。
+    private var sheetBackdrop: some View {
+        ZStack {
+            AppPalette.canvas
+            if !reduceTransparency {
+                let paints = paintSet.paints
+                if let warm = paints.first, let cool = paints.dropFirst(paints.count / 3).first {
+                    LinearGradient(
+                        stops: [
+                            .init(color: warm.swatch.opacity(0.29), location: 0),
+                            .init(color: .clear, location: 0.46),
+                            .init(color: cool.swatch.opacity(0.20), location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottom
+                    )
+                }
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var inspectorSurface: some View {
+        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+        if reduceTransparency {
+            shape.fill(AppPalette.canvas)
+                .overlay { shape.strokeBorder(AppPalette.outlineVariant) }
+        } else if #available(macOS 26.0, *) {
+            Color.clear.glassEffect(.regular, in: shape)
+        } else {
+            shape.fill(.regularMaterial)
+                .overlay { shape.strokeBorder(AppPalette.outlineVariant) }
+        }
+    }
+
+    private var resultPanel: some View {
+        ScrollViewReader { scroll in
+            ScrollView {
+                ZStack(alignment: .topLeading) {
+                    resultContent
+                }
+                .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: isGenerating)
+                .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: result != nil)
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .id("mixingResultTop")
+            }
+            .onChange(of: requestID) { _ in
+                scroll.scrollTo("mixingResultTop", anchor: .top)
+            }
+            .background(AppPalette.cardSurface.opacity(reduceTransparency ? 1 : 0.86))
+            .accessibilityIdentifier("mixingResultsScrollView")
+        }
+    }
+
+    @ViewBuilder
+    private var resultContent: some View {
+        if let result {
+            MixingPaletteDetails(palette: result)
+                .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
+        } else if isGenerating {
+            VStack(alignment: .leading, spacing: 16) {
+                ProgressView()
+                Text(inputMode == .blend ? "AI 正在合成目标色并计算三色配方…" : "正在计算本色、阴影色和高光色…")
+                    .font(.headline)
+                Text((activeModel ?? configuration.model).reasoningEffort.generationWaitDescription)
+                    .accessibilityIdentifier("mixingWaitDescription")
+                    .foregroundStyle(.secondary)
+                Button("取消生成", action: cancelGeneration)
+                    .workspaceButton()
+                    .accessibilityIdentifier("cancelMixingButton")
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 40)
+            .transition(.opacity)
+        } else {
+            availablePaints.transition(.opacity)
+        }
+    }
+
+    private var availablePaints: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("可用颜料").font(.title2.weight(.semibold))
+                Text("先调 200 滴本色，再各取 20 滴调制阴影与高光。")
+                    .foregroundStyle(.secondary)
+            }
+            LazyVStack(alignment: .leading, spacing: 12) {
+                ForEach(paintSet.series) { series in
+                    HStack(spacing: 0) {
+                        ForEach(series.paints) { paint in
+                            paint.swatch
+                        }
+                    }
+                    .frame(height: 34)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .accessibilityHidden(true)
+                    Text("\(series.title) · \(series.paints.count) 色")
+                        .font(.headline)
+                        .padding(.top, 4)
+                    Text(series.previewNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("paintPreviewNote-\(series.rawValue)")
+                    ForEach(series.paints) { paint in
+                        PaintDoseRow(paint: paint, drops: nil)
+                            .accessibilityIdentifier("availablePaint-\(paint.code)")
+                    }
+                }
+            }
+            .id(paintSet)
+            .transition(.opacity)
+        }
+        .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: paintSet)
     }
 
     private var resultActions: some View {
@@ -311,16 +386,22 @@ struct AIMixingView: View {
                 .accessibilityIdentifier("mixingInputMode")
             }
 
-            switch inputMode {
-            case .single:
-                singleColorInput
-            case .reference:
-                referenceColorInput
-                    .disabled(isGenerating)
-            case .blend:
-                ColorBlendEditor(entries: $blendEntries)
-                    .disabled(isGenerating)
+            ZStack(alignment: .topLeading) {
+                Group {
+                    switch inputMode {
+                    case .single:
+                        singleColorInput
+                    case .reference:
+                        referenceColorInput.disabled(isGenerating)
+                    case .blend:
+                        ColorBlendEditor(entries: $blendEntries).disabled(isGenerating)
+                    }
+                }
+                .id(inputMode)
+                .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: inputMode)
 
             generationControls
         }
@@ -368,7 +449,10 @@ struct AIMixingView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .id(referenceSeries)
+                .transition(.opacity)
             }
+            .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: referenceSeries)
             .frame(height: 156)
             .accessibilityIdentifier("referencePaintList")
 
@@ -540,10 +624,33 @@ struct AIMixingView: View {
     }
 }
 
+/// 模式切换仅驱动被替换的内容；原生选择器、文本编辑和滚动视图保留各自的状态。
+enum MixingPanelMotion {
+    static func switchAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.22)
+    }
+
+    static func reveal(reduceMotion: Bool) -> AnyTransition {
+        guard !reduceMotion else { return .identity }
+        return .asymmetric(
+            insertion: .opacity.combined(with: .offset(y: 8)),
+            removal: .opacity
+        )
+    }
+}
+
+private extension CatalogPaint {
+    var swatch: Color {
+        Color(.sRGB, red: red / 255, green: green / 255, blue: blue / 255)
+    }
+}
+
 // MARK: - 可复用的配方展示
 /// 三色选择器及所选角色的配方详情。
 struct MixingPaletteDetails: View {
     let palette: MixingPalette
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var roleHighlight
     @State private var selectedRole: MixingRole = .base
 
     /// 并列展示三种目标色，选中角色后切换该份用量和步骤。
@@ -584,7 +691,12 @@ struct MixingPaletteDetails: View {
                         )
                         .overlay {
                             RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(selectedRole == role ? AppPalette.primary : AppPalette.outlineVariant)
+                                .strokeBorder(AppPalette.outlineVariant)
+                            if selectedRole == role {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(AppPalette.primary, lineWidth: 2)
+                                    .matchedGeometryEffect(id: "selectedRole", in: roleHighlight)
+                            }
                         }
                     }
                     .buttonStyle(.plain)
@@ -596,9 +708,13 @@ struct MixingPaletteDetails: View {
             }
 
             Divider()
-            MixingRecipeDetails(recipe: palette.recipe(for: selectedRole))
-                .id(selectedRole)
+            ZStack(alignment: .topLeading) {
+                MixingRecipeDetails(recipe: palette.recipe(for: selectedRole))
+                    .id(selectedRole)
+                    .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
+            }
         }
+        .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: selectedRole)
     }
 }
 
@@ -722,7 +838,7 @@ private struct PaintDoseRow: View {
     var body: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 5)
-                .fill(Color(.sRGB, red: paint.red / 255, green: paint.green / 255, blue: paint.blue / 255))
+                .fill(paint.swatch)
                 .frame(width: 28, height: 28)
                 .overlay {
                     RoundedRectangle(cornerRadius: 5).strokeBorder(.gray.opacity(0.2))

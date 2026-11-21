@@ -91,6 +91,7 @@ struct ColorBlendEntry: Identifiable, Equatable {
 
 /// 管理多行合色输入的增删，并说明占比按相对关系归一化。
 struct ColorBlendEditor: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var entries: [ColorBlendEntry]
 
     /// 始终保留至少两组输入，新行沿用上一行的模式和系列。
@@ -100,13 +101,24 @@ struct ColorBlendEditor: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            ForEach($entries) { $entry in
-                let entryID = entry.id
-                let index = entries.firstIndex { $0.id == entryID } ?? 0
-                ColorBlendInputRow(entry: $entry, index: index, canRemove: entries.count > 2) {
-                    entries.removeAll { $0.id == entryID }
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(Array(entries.enumerated()), id: \.element.id) { index, draft in
+                    // 离场动画期间行仍可能读取绑定，已删除的行保留最后一帧的草稿。
+                    let entry = Binding(
+                        get: { entries.first { $0.id == draft.id } ?? draft },
+                        set: { value in
+                            if let position = entries.firstIndex(where: { $0.id == draft.id }) {
+                                entries[position] = value
+                            }
+                        }
+                    )
+                    ColorBlendInputRow(entry: entry, index: index, canRemove: entries.count > 2) {
+                        entries.removeAll { $0.id == draft.id }
+                    }
+                    .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
                 }
             }
+            .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: entries.count)
 
             Button {
                 var entry = ColorBlendEntry(target: .initial, percentage: 25)
@@ -138,6 +150,7 @@ struct ColorBlendEditor: View {
 
 /// 编辑一组参考色及占比，行删除动作由父视图按 UUID 处理。
 private struct ColorBlendInputRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var entry: ColorBlendEntry
     let index: Int
     let canRemove: Bool
@@ -191,15 +204,20 @@ private struct ColorBlendInputRow: View {
             .workspaceMenuPicker()
             .accessibilityIdentifier("blendInputMode-\(index)")
 
-            if entry.inputMode == .reference {
-                ColorBlendReferenceInput(entry: $entry, index: index)
-            } else {
-                HStack(spacing: 8) {
-                    channel("R", text: $entry.redText)
-                    channel("G", text: $entry.greenText)
-                    channel("B", text: $entry.blueText)
+            ZStack(alignment: .topLeading) {
+                if entry.inputMode == .reference {
+                    ColorBlendReferenceInput(entry: $entry, index: index)
+                        .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
+                } else {
+                    HStack(spacing: 8) {
+                        channel("R", text: $entry.redText)
+                        channel("G", text: $entry.greenText)
+                        channel("B", text: $entry.blueText)
+                    }
+                    .transition(MixingPanelMotion.reveal(reduceMotion: reduceMotion))
                 }
             }
+            .animation(MixingPanelMotion.switchAnimation(reduceMotion: reduceMotion), value: entry.inputMode)
 
             HStack {
                 Text("占比").font(.caption)

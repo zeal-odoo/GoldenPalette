@@ -4,7 +4,7 @@
 
 用于记录项目颜色和生成模型、美术颜料调色配方的 macOS 应用。
 
-**最新版本：1.0.22（构建 23）** · [发布说明与下载](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [下载 Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.22/GoldenPalette-1.0.22-universal.dmg)
+**最新版本：1.0.24（构建 25）** · [发布说明与下载](https://github.com/zeal-odoo/GoldenPalette/releases/latest) · [下载 Universal DMG](https://github.com/zeal-odoo/GoldenPalette/releases/download/v1.0.24/GoldenPalette-1.0.24-universal.dmg)
 
 - 输入 RGB 或选择颜色，通过本机 Codex CLI 生成本色、阴影色、高光色配方。
 - 在“AI 调色 → 调色原料”中选择 GOLDEN SoFlat 12 色或 Fluid Acrylics 15 色。两套原料分别使用，AI 只使用所选套装。本色调制 200 滴；阴影和高光各取 20 滴已调本色，再按配方追加少量颜料，列出色号、追加滴数、最终总量和步骤。
@@ -24,7 +24,7 @@
 发布页同时提供 SHA-256 校验文件和中英文安装说明。把 DMG 和 `.sha256` 文件下载到同一目录后，可在该目录执行：
 
 ```sh
-shasum -a 256 -c GoldenPalette-1.0.22-universal.sha256
+shasum -a 256 -c GoldenPalette-1.0.24-universal.sha256
 ```
 
 应用界面目前主要使用简体中文；本仓库提供中英文使用说明。

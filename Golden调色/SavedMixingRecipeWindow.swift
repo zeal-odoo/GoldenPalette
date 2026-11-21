@@ -24,7 +24,7 @@ final class SavedMixingRecipeWindowController: NSWindowController, NSWindowDeleg
         self.recipe = recipe
         let panel = DraggableGlassPanel(
             contentRect: NSRect(origin: .zero, size: SavedMixingRecipeWindowContent.contentSize),
-            styleMask: [.titled, .closable, .resizable],
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -36,25 +36,36 @@ final class SavedMixingRecipeWindowController: NSWindowController, NSWindowDeleg
         panel.isMovable = true
         panel.isMovableByWindowBackground = true
         panel.isOpaque = false
-        panel.backgroundColor = .windowBackgroundColor
+        panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = false
         panel.isReleasedWhenClosed = false
-        // 内容区域位于标题栏下方，保留 AppKit 标题栏背景以免顶部透出异常。
-        // Keep the native title-bar background, just like the color editor.
-        panel.titlebarAppearsTransparent = false
+        panel.titlebarAppearsTransparent = true
         panel.level = .floating
         panel.collectionBehavior = [.fullScreenAuxiliary]
+
+        // 单层磨砂铺到标题栏下方，由 WindowServer 直接采样浮窗后面的内容。
+        let backdrop = NSVisualEffectView()
+        backdrop.material = .popover
+        backdrop.blendingMode = .behindWindow
+        backdrop.state = .followsWindowActiveState
+        panel.contentView = backdrop
 
         let hostingView = NSHostingView(
             rootView: SavedMixingRecipeWindowContent(recipe: recipe) { [weak self] in
                 self?.close()
             }
         )
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
-        panel.contentView = hostingView
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        backdrop.addSubview(hostingView)
+        let contentGuide = panel.contentLayoutGuide as? NSLayoutGuide ?? backdrop.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: contentGuide.topAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: backdrop.bottomAnchor)
+        ])
         panel.contentMinSize = NSSize(width: 420, height: 360)
         panel.setContentSize(SavedMixingRecipeWindowContent.contentSize)
         panel.center()
@@ -75,6 +86,7 @@ final class SavedMixingRecipeWindowController: NSWindowController, NSWindowDeleg
 
 /// 已存配方窗口内容，复用调色结果的详情组件。
 struct SavedMixingRecipeWindowContent: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     static let contentSize = NSSize(width: 620, height: 680)
 
     let recipe: MixingRecipe
@@ -82,13 +94,7 @@ struct SavedMixingRecipeWindowContent: View {
 
     /// 顶部提供复制与关闭，正文独立滚动以容纳长步骤。
     var body: some View {
-        ScrollView {
-            MixingRecipeDetails(recipe: recipe)
-                .padding(24)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .accessibilityIdentifier("savedMixingRecipeScrollView")
-        .workspaceBar(edge: .top) {
+        VStack(spacing: 0) {
             HStack {
                 Text("\(recipe.role.title) · \(recipe.preparedTotalDrops) 滴配方").font(.headline)
                 Spacer()
@@ -106,8 +112,18 @@ struct SavedMixingRecipeWindowContent: View {
             .workspaceGlassGroup()
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
+
+            Divider()
+
+            ScrollView {
+                MixingRecipeDetails(recipe: recipe)
+                    .padding(24)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .clipped()
+            .accessibilityIdentifier("savedMixingRecipeScrollView")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppPalette.cardSurface)
+        .background(reduceTransparency ? AppPalette.canvas : Color.clear)
     }
 }

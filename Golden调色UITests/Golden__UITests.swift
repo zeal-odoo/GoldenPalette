@@ -289,7 +289,11 @@ final class Golden__UITests: XCTestCase {
             if title != "本色" {
                 XCTAssertTrue((recipeWindow.staticTexts["mixingBasePortion"].value as? String)?.contains("UI 本色 · 20 滴") == true)
             }
-            XCTAssertTrue(recipeWindow.buttons["copySavedMixingRecipeButton"].exists)
+            let copyButton = recipeWindow.buttons["copySavedMixingRecipeButton"]
+            let recipeScroll = recipeWindow.scrollViews["savedMixingRecipeScrollView"]
+            XCTAssertTrue(copyButton.exists)
+            XCTAssertTrue(recipeScroll.exists)
+            XCTAssertGreaterThanOrEqual(recipeScroll.frame.minY, copyButton.frame.maxY)
             XCTAssertEqual(
                 recipeWindow.descendants(matching: .any)["savedMixingModelSummary"].firstMatch.value as? String,
                 "ui-custom-model · max"
